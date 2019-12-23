@@ -1881,6 +1881,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             zLogAppend("");
 
             beginTime();
+            //关联创建的公私秘钥
             String[] result5 = mSafetyCardMT2.generateSM2Key("0201", "0202", "01");
             if (result5[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result5[0])) {
                 zLogAppend("产生SM2密钥对，并同时导出公钥:" + result5[1]);
