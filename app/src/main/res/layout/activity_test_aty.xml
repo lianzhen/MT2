@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    >
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="40dp"
+    android:orientation="horizontal"
+    >
+  <Button
+      android:id="@+id/btn_create_mf"
+      android:layout_width="wrap_content"
+      android:layout_height="match_parent"
+      android:text="创建MF"
+      />
+  <Button
+      android:id="@+id/btn_delete_mf"
+      android:layout_width="wrap_content"
+      android:layout_height="match_parent"
+      android:text="删除MF"
+      />
+  <Button
+      android:id="@+id/btn_create_key"
+      android:layout_width="wrap_content"
+      android:layout_height="match_parent"
+      android:text="创建Key文件"
+      />
+  <Button
+      android:id="@+id/btn_write_key"
+      android:layout_width="wrap_content"
+      android:layout_height="match_parent"
+      android:text="装载Key"
+      />
+</LinearLayout>
+</LinearLayout>

@@ -10,6 +10,7 @@ import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
@@ -22,8 +23,13 @@ import com.bhz.xinduncard.SM4;
 import com.bhz.xinduncard.SM4_Context;
 import com.bhz.xinduncard.SM3Digest;
 
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
+import org.spongycastle.util.encoders.Hex;
+import org.spongycastle.util.encoders.HexEncoder;
+
+import static jxl.biff.StringHelper.getBytes;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
     protected static final String TAG = "MainActivity";
@@ -32,7 +38,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private String capdu;
     private CheckBox cb1, cb2, cb3, cb4, cb5, cb6;
     private static SafetyCardMT2 mSafetyCardMT2;
-    private boolean cb1Flag = false, cb2Flag = true, cb3Flag = true, cb4Flag = true, cb5Flag = true, cb6Flag = true;
+    private boolean cb1Flag = false, cb2Flag = true, cb3Flag = true, cb4Flag = true, cb5Flag = true,
+            cb6Flag = true;
     private Handler handler = new Handler();
 
     private String mPubKey1 = "";
@@ -52,9 +59,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private String mPlain = "112233445566";
     //    private String mPlain96 = "0102030405060708010203040506070801020304050607080102030405060708112233445566889900AABBCCDDEEFF112233445566889900AABBCCDDEEFF112233445566889900AABBCCDDEEFF112233112233445566889900AABBCCDDEEFF112233445566889900AABBCCDDEEFF112233445566889900AABBCCDDEEFF112233112233445566889900AABBCCDDEEFF112233445566889900AABBCCDDEEFF112233445566889900AABBCCDDEEFF112233112233445566889900AABBCCDDEEFF112233445566889900AABBCCDDEEFF112233445566889900AABBCCDDEEFF112233";
-    private String mPlain96 = "01020304050607080102030405060708010203040506070801020304050607080102030405060708010203040506070801020304050607080102030405060708010203040506070801020304050607080102030405060708010203040506070801020304050607080102030405060708010203040506070801020304050607080102030405060708010203040506070801020304050607080102030405060708";
+    private String mPlain96 =
+            "01020304050607080102030405060708010203040506070801020304050607080102030405060708010203040506070801020304050607080102030405060708010203040506070801020304050607080102030405060708010203040506070801020304050607080102030405060708010203040506070801020304050607080102030405060708010203040506070801020304050607080102030405060708";
     //    private String mPlain1024 = "11223344556677889900AABBCCDDEEFF11223344556677889900AABBCCDDEEFF11223344556677889900AABBCCDDEEFF11223344556677889900AABBCCDDEEFF11223344556677889900AABBCCDDEEFF11223344556677889900AABBCCDDEEFF11223344";
-    private String mPlain1024 = "11223344556677889900AABBCCDDEEFF11223344556677889900AABBCCDDEEFF11223344556677889900AABBCCDDEEFF11223344556677889900AABBCCDDEEFF11223344556677889900AABBCCDDEEFF11223344556677889900AABBCCDDEEFF11223344556677889900AABBCCDDEEFF11223344556677889900AABBCCDDEEFF";
+    private String mPlain1024 =
+            "11223344556677889900AABBCCDDEEFF11223344556677889900AABBCCDDEEFF11223344556677889900AABBCCDDEEFF11223344556677889900AABBCCDDEEFF11223344556677889900AABBCCDDEEFF11223344556677889900AABBCCDDEEFF11223344556677889900AABBCCDDEEFF11223344556677889900AABBCCDDEEFF";
 
     private String mPlainData = "";
 
@@ -64,6 +73,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private String mCipherRSA2048p = "";
     private String mCipherRSA2048no = "";
 
+    private Button sM2Test;
+    private String tarPublicKey;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -109,7 +120,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         findViewById(R.id.sm3_calc).setOnClickListener(this);
         findViewById(R.id.sm4_calc).setOnClickListener(this);
 
-
         findViewById(R.id.del_mf).setOnClickListener(this);
         findViewById(R.id.create_mf).setOnClickListener(this);
         findViewById(R.id.create_key).setOnClickListener(this);
@@ -129,6 +139,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         findViewById(R.id.sm4_speed_test).setOnClickListener(this);
         findViewById(R.id.sm2_speed_test).setOnClickListener(this);
         findViewById(R.id.get_1121).setOnClickListener(this);
+        findViewById(R.id.sm2Test).setOnClickListener(this);
+        findViewById(R.id.sha1_digest).setOnClickListener(this);
+        findViewById(R.id.sha256_digest).setOnClickListener(this);
+        findViewById(R.id.sm3_digest).setOnClickListener(this);
+        findViewById(R.id.import_publicKey_Empty).setOnClickListener(this);
+        findViewById(R.id.import_publicKey_NoEmpty).setOnClickListener(this);
+        findViewById(R.id.create_file).setOnClickListener(this);
+        findViewById(R.id.sign_btn).setOnClickListener(this);
+
 
         mRet = (TextView) findViewById(R.id.result);
         mSenddata = (EditText) findViewById(R.id.senddata);
@@ -151,13 +170,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
         mSafetyCardMT2 = new SafetyCardMT2(this);
         mSafetyCardMT2.setPrintLog(true);
-//        mSafetyCardMT2.setFlag(cb1Flag, cb2Flag, cb3Flag, cb4Flag, cb5Flag, cb6Flag);
-
+        //        mSafetyCardMT2.setFlag(cb1Flag, cb2Flag, cb3Flag, cb4Flag, cb5Flag, cb6Flag);
     }
 
     @Override
     public void onClick(View view) {
-//        mSafetyCardMT2.setFlag(cb1Flag, cb2Flag, cb3Flag, cb4Flag, cb5Flag, cb6Flag);
+        //        mSafetyCardMT2.setFlag(cb1Flag, cb2Flag, cb3Flag, cb4Flag, cb5Flag, cb6Flag);
         switch (view.getId()) {
             case R.id.open:
                 beginTime();
@@ -168,7 +186,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 capdu = mSenddata.getText().toString();
                 sendAPDU(capdu);
                 break;
-
 
             case R.id.del_mf:
                 beginTime();
@@ -189,16 +206,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
 
             case R.id.read_binary:
-//                beginTime();
+                //                beginTime();
                 read_binary();
-//                read_binary_skf();
-//                endTime();
+                //                read_binary_skf();
+                //                endTime();
                 break;
 
             case R.id.select_file:
-//                beginTime();
+                //                beginTime();
                 select_file();
-//                endTime();
+                //                endTime();
                 break;
             case R.id.get_challenge:
                 beginTime();
@@ -211,44 +228,50 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 endTime();
                 break;
             case R.id.session_key:
-//                beginTime();
+                //                beginTime();
                 session_key();
-//                endTime();
+                //                endTime();
                 break;
             case R.id.digestCal:
-//                beginTime();
+                //                beginTime();
                 digestCal();
-//                endTime();
+                //                endTime();
                 break;
             case R.id.sm2:
-//                beginTime();
+                //                beginTime();
                 new Thread() {
                     public void run() {
                         sm2();
-                    };
+                    }
+
+                    ;
                 }.start();
 
-//                endTime();
+                //                endTime();
                 break;
             case R.id.SymmKey:
-//                beginTime();
+                //                beginTime();
                 new Thread() {
                     public void run() {
                         SymmKey();
-                    };
+                    }
+
+                    ;
                 }.start();
 
-//                endTime();
+                //                endTime();
                 break;
             case R.id.rsa:
-//                beginTime();
+                //                beginTime();
                 new Thread() {
                     public void run() {
                         rsa();
-                    };
+                    }
+
+                    ;
                 }.start();
 
-//                endTime();
+                //                endTime();
                 break;
             case R.id.safety_house:
                 new Thread() {
@@ -256,27 +279,30 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         beginTime();
                         safety_house();
                         endTime();
-                    };
+                    }
+
+                    ;
                 }.start();
 
                 break;
             case R.id.safety_house1:
-//                new Thread() {
-//                    public void run() {
-//                        beginTime();
-//
-//                        endTime();
-//                    };
-//                }.start();
+                //                new Thread() {
+                //                    public void run() {
+                //                        beginTime();
+                //
+                //                        endTime();
+                //                    };
+                //                }.start();
                 safety_house1();
                 break;
-
 
             case R.id.sm4_calc:
                 new Thread() {
                     public void run() {
                         sm4_calc();
-                    };
+                    }
+
+                    ;
                 }.start();
 
                 break;
@@ -284,7 +310,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 new Thread() {
                     public void run() {
                         sm4_speed_test();
-                    };
+                    }
+
+                    ;
                 }.start();
 
                 break;
@@ -292,7 +320,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 new Thread() {
                     public void run() {
                         sm2_speed_test();
-                    };
+                    }
+
+                    ;
                 }.start();
 
                 break;
@@ -300,10 +330,201 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 new Thread() {
                     public void run() {
                         test_1121();
-                    };
+                    }
                 }.start();
 
                 break;
+
+            case R.id.sm2Test:
+
+                new Thread() {
+                    public void run() {
+                        testSM2();
+                    }
+                }.start();
+                break;
+            case R.id.sha1_digest:
+                for (int i = 0; i < 10; i++) {
+                    test_sha1_digest();
+                }
+
+                break;
+            case R.id.sha256_digest:
+                for (int i = 0; i < 10; i++) {
+                    test_sha256_digest();
+                }
+                break;
+            case R.id.sm3_digest:
+                for (int i = 0; i < 10; i++) {
+                    test_sm3_digest();
+                }
+                break;
+            case R.id.create_file:
+                createPubAndPriFile();
+                break;
+            case R.id.import_publicKey_Empty:
+                //空文件下导入公钥--并导出公钥
+                importPublicKey(true);
+                break;
+            case R.id.import_publicKey_NoEmpty:
+                //文件下已经存在公钥的情况下导入公钥--并导出公钥
+                importPublicKey(false);
+                break;
+            case R.id.sign_btn:
+                testPriKeySign();
+                break;
+        }
+    }
+
+    private void testSM2() {
+        //关联创建的公私秘钥 公钥的文件标识符 私钥的文件标识符 01：导出公钥  00：不导出公钥
+        String[] result5 = mSafetyCardMT2.generateSM2Key("0201", "0202", "01");
+        if (result5[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result5[0])) {
+            zLogAppend("产生SM2密钥对，并同时导出公钥:" + result5[1]);
+            //导出利用API公钥
+            ;
+            zLogAppend("直接导出公钥:" + mSafetyCardMT2.exportSM2PublicKey("0201")[1]);
+        } else {
+            zLogAppend("产生SM2密钥对，并同时导出公钥" + result5[0]);
+        }
+        //加密操作
+        //String str="0011223344556677889988AABBCCDDEE";
+        String str = "今天吃饭了吗";
+        str = Util.getHexString(str.getBytes());
+        String miwen;
+        String[] result6 = mSafetyCardMT2.SM2PublicKeyEnc("0201", str);
+        if (result6[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result6[0])) {
+            zLogAppend("SM2 加密:" + result6[1]);
+            miwen = result6[1];
+        } else {
+            zLogAppend("SM2 加密" + result6[0]);
+            miwen = result6[0];
+        }
+        //解密操作
+        String[] result7 = mSafetyCardMT2.SM2PrivateKeyDec("0202", miwen);
+        if (result7[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result7[0])) {
+            byte[] b = Util.hexStringToBytes(result7[1]);
+            String res = null;
+            try {
+                res = new String(b, "UTF-8");
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
+            }
+            zLogAppend("SM2 解密成功:" + res);
+        } else {
+            zLogAppend("SM2 解密" + result7[0]);
+        }
+    }
+
+    private void test_sha1_digest() {
+        try {
+
+            //            String data = "3031300d0609608648016503040206053031300d0609608648016503040206053031300d060960864801650304020605";
+            String data = "646541321676431678";
+            beginTime();
+            String[] result1 = mSafetyCardMT2.digestCal("01", "01", data);
+            if (result1[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result1[0])) {
+                zLog("SHA-1 摘要:" + result1[1]);
+            } else {
+                zLog("SHA-1 摘要 error" + result1[0]);
+            }
+            zLogAppend("SHA-1 摘要 " + endTimeA());
+            zLogAppend("");
+        } catch (Exception e) {
+            zLog("发送异常" + e.getMessage());
+        }
+    }
+
+    private void test_sha256_digest() {
+        try {
+
+            //            String data = "3031300d0609608648016503040206053031300d0609608648016503040206053031300d060960864801650304020605";
+            String data = "646541321676431678";
+
+            beginTime();
+            String[] result2 = mSafetyCardMT2.digestCal("01", "02", data);
+            if (result2[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result2[0])) {
+                zLogAppend("SHA-256 摘要:" + result2[1]);
+            } else {
+                zLogAppend("SHA-256 摘要 error" + result2[0]);
+            }
+            zLogAppend("SHA-256 摘要 " + endTimeA());
+            zLogAppend("");
+        } catch (Exception e) {
+            zLog("发送异常" + e.getMessage());
+        }
+    }
+
+    private void test_sm3_digest() {
+        try {
+
+            //            String data = "3031300d0609608648016503040206053031300d0609608648016503040206053031300d060960864801650304020605";
+            String data = "646541321676431678";
+
+            beginTime();
+            String[] result3 = mSafetyCardMT2.digestCal("01", "03", data);
+            if (result3[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result3[0])) {
+                zLogAppend("SM3 摘要:" + result3[1]);
+            } else {
+                zLogAppend("SM3 摘要 error" + result3[0]);
+            }
+            zLogAppend("SM3 摘要 " + endTimeA());
+            zLogAppend("");
+        } catch (Exception e) {
+            zLog("发送异常" + e.getMessage());
+        }
+    }
+
+    private void createPubAndPriFile() {
+        //创建公钥文件
+        mSafetyCardMT2.createSM2PubkeyFile("0270");
+        mSafetyCardMT2.createSM2PubkeyFile("0272");
+        mSafetyCardMT2.createSM2PubkeyFile("0274");
+        mSafetyCardMT2.createSM2PrikeyFile("0271");
+        mSafetyCardMT2.createSM2PrikeyFile("0273");
+        mSafetyCardMT2.createSM2PubkeyFile("0275");
+
+        //关联文件并创建公私密钥对
+        String a[] = mSafetyCardMT2.generateSM2Key("0270", "0271", "01");
+        tarPublicKey = a[1];
+        zLogAppend("导出创建的公钥0270" + a[1]);
+    }
+
+    private void importPublicKey(boolean isEmpty) {
+        if (!isEmpty) {
+            //关联文件并创建公私密钥对
+            String b[] = mSafetyCardMT2.generateSM2Key("0272", "0273", "01");
+            zLogAppend("导出创建的公钥0272" + b[1]);
+            //导入公钥
+            mSafetyCardMT2.importSM2PubKey("0272", tarPublicKey);
+            //导出公钥
+            String c[] = mSafetyCardMT2.exportSM2PublicKey("0272");
+            zLogAppend("导出创建的公钥0272" + c[1]);
+        } else {
+            //导入公钥
+            mSafetyCardMT2.importSM2PubKey("0274", tarPublicKey);
+            //导出公钥
+            String d[] = mSafetyCardMT2.exportSM2PublicKey("0274");
+            zLogAppend("导出创建的公钥0274" + d[1]);
+        }
+    }
+
+    private void testPriKeySign() {
+        String hashData = "";
+        String signData = "";
+        String[] result8 = mSafetyCardMT2.digestCal("01", "03", "12345678");
+        if (result8[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result8[0])) {
+            hashData = result8[1];
+        }
+        //对摘要用私钥加签
+        String[] result9 = mSafetyCardMT2.SM2PrivateKeySign("0202", hashData);
+        if (result9[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result9[0])) {
+            signData = result9[1];
+        }
+        //公钥进行验签
+        String result10[] = mSafetyCardMT2.SM2PublicKeyVerify("0201", hashData, signData);
+        if (result10[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result10[0])) {
+            zLogAppend("验签结果：" + "成功");
         }
     }
 
@@ -340,9 +561,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             SM4_Context context = new SM4_Context();
             context.isPadding = false;
             try {
-                sm4.sm4_setkey_enc(context, FileManager.hexToBytes("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"));
-                bData = sm4.sm4_crypt_cbc(context, FileManager.hexToBytes("00000000000000000000000000000000"), FileManager.hexToBytes(New_IDKey));
-
+                sm4.sm4_setkey_enc(context,
+                        FileManager.hexToBytes("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"));
+                bData = sm4.sm4_crypt_cbc(context,
+                        FileManager.hexToBytes("00000000000000000000000000000000"),
+                        FileManager.hexToBytes(New_IDKey));
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -351,9 +574,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             String[] res = mSafetyCardMT2.getChallengeA("10");
             String challenge = res[1] + "80000000000000000000000000000000";
             try {
-                sm4.sm4_setkey_enc(context, FileManager.hexToBytes("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"));
-                bData1 = sm4.sm4_crypt_cbc(context, FileManager.hexToBytes("00000000000000000000000000000000"), FileManager.hexToBytes(challenge));
-
+                sm4.sm4_setkey_enc(context,
+                        FileManager.hexToBytes("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"));
+                bData1 = sm4.sm4_crypt_cbc(context,
+                        FileManager.hexToBytes("00000000000000000000000000000000"),
+                        FileManager.hexToBytes(challenge));
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -378,9 +603,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             String[] res2 = mSafetyCardMT2.getChallenge("20");
             String challenge2 = res2[1];
             try {
-                sm4.sm4_setkey_enc(context, FileManager.hexToBytes("11223344556677889900AABBCCDDEEFF"));
-                bData2 = sm4.sm4_crypt_cbc(context, FileManager.hexToBytes("00000000000000000000000000000000"), FileManager.hexToBytes(challenge2));
-
+                sm4.sm4_setkey_enc(context,
+                        FileManager.hexToBytes("11223344556677889900AABBCCDDEEFF"));
+                bData2 = sm4.sm4_crypt_cbc(context,
+                        FileManager.hexToBytes("00000000000000000000000000000000"),
+                        FileManager.hexToBytes(challenge2));
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -417,12 +644,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             byte BData1[] = new byte[32];
             byte BData2[] = new byte[32];
             try {
-                sm4.sm4_setkey_dec(context, FileManager.hexToBytes("11223344556677889900AABBCCDDEEFF"));
-                BData1 = sm4.sm4_crypt_cbc(context, FileManager.hexToBytes("00000000000000000000000000000000"), FileManager.hexToBytes(register01.substring(0, 64)));
-                BData2 = sm4.sm4_crypt_cbc(context, FileManager.hexToBytes("00000000000000000000000000000000"), FileManager.hexToBytes(register01.substring(64)));
+                sm4.sm4_setkey_dec(context,
+                        FileManager.hexToBytes("11223344556677889900AABBCCDDEEFF"));
+                BData1 = sm4.sm4_crypt_cbc(context,
+                        FileManager.hexToBytes("00000000000000000000000000000000"),
+                        FileManager.hexToBytes(register01.substring(0, 64)));
+                BData2 = sm4.sm4_crypt_cbc(context,
+                        FileManager.hexToBytes("00000000000000000000000000000000"),
+                        FileManager.hexToBytes(register01.substring(64)));
                 Log.d(TAG, "BData1:" + FileManager.bytesToHex(BData1));
                 Log.d(TAG, "BData2:" + FileManager.bytesToHex(BData2));
-
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -430,21 +661,24 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             byte[] result = new byte[32];
             byte[] resultT = new byte[32];
             for (int i = 0; i < 32; i++) {
-                resultT[i]=(byte)(BData1[i]^0xFF);
-                result[i]=(byte)(resultT[i]^BData2[i]);
+                resultT[i] = (byte) (BData1[i] ^ 0xFF);
+                result[i] = (byte) (resultT[i] ^ BData2[i]);
             }
 
             Log.d(TAG, "密钥加密密钥（密钥3）:" + FileManager.bytesToHex(result));
             try {
-                sm4.sm4_setkey_enc(context, FileManager.hexToBytes(FileManager.bytesToHex(result).substring(0, 32)));
-                bData2 = sm4.sm4_crypt_cbc(context, FileManager.hexToBytes("00000000000000000000000000000000"), FileManager.hexToBytes(KKeyAB));
-
+                sm4.sm4_setkey_enc(context,
+                        FileManager.hexToBytes(FileManager.bytesToHex(result).substring(0, 32)));
+                bData2 = sm4.sm4_crypt_cbc(context,
+                        FileManager.hexToBytes("00000000000000000000000000000000"),
+                        FileManager.hexToBytes(KKeyAB));
             } catch (Exception e) {
                 e.printStackTrace();
             }
 
             beginTime();
-            String[] result6 = mSafetyCardMT2.importProtectionKey("0002", FileManager.bytesToHex(bData2));
+            String[] result6 =
+                    mSafetyCardMT2.importProtectionKey("0002", FileManager.bytesToHex(bData2));
             if (result6[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result6[0])) {
                 endTime2();
                 zLogAppend("importProtectionKey 成功！" + "用时：" + mUseTime + "ms");
@@ -455,7 +689,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             zLogAppend("********** importProtectionKey 结束！**********");
             zLogAppend("");
             zLogAppend("********** sessionKey Crypt 开始！**********");
-
 
             String[] res3 = mSafetyCardMT2.getChallenge("40");
             String challenge3 = res3[1];
@@ -480,12 +713,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 zLogAppend("sessionKeyEncrypt error！" + "用时：" + mUseTime + "ms");
             }
 
-
             String[] res4 = mSafetyCardMT2.getChallenge("20");
             String challenge4 = res4[1];
 
             sm4.sm4_setkey_enc(context, FileManager.hexToBytes("00AABBCCDDEEFF112233445566778899"));
-            byte[] bData11 = sm4.sm4_crypt_cbc(context, FileManager.hexToBytes("00000000000000000000000000000000"), FileManager.hexToBytes(challenge4));
+            byte[] bData11 = sm4.sm4_crypt_cbc(context,
+                    FileManager.hexToBytes("00000000000000000000000000000000"),
+                    FileManager.hexToBytes(challenge4));
 
             String[] res5 = mSafetyCardMT2.getChallenge("60");
             String challenge5 = res5[1];
@@ -500,10 +734,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             String data22 = challenge5 + hash1;
 
             sm4.sm4_setkey_enc(context, FileManager.hexToBytes(challenge4.substring(0, 32)));
-            byte[] bData33 = sm4.sm4_crypt_cbc(context, FileManager.hexToBytes("00000000000000000000000000000000"), FileManager.hexToBytes(data22));
+            byte[] bData33 = sm4.sm4_crypt_cbc(context,
+                    FileManager.hexToBytes("00000000000000000000000000000000"),
+                    FileManager.hexToBytes(data22));
 
             beginTime();
-            String[] result8 = mSafetyCardMT2.sessionKeyDecrypt("0002", "00", FileManager.bytesToHex(bData11), FileManager.bytesToHex(bData33));
+            String[] result8 =
+                    mSafetyCardMT2.sessionKeyDecrypt("0002", "00", FileManager.bytesToHex(bData11),
+                            FileManager.bytesToHex(bData33));
             if (result8[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result8[0])) {
                 endTime2();
                 Log.d(TAG, "sessionKeyDecrypt plain:" + result8[1]);
@@ -544,10 +782,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             String challenge7 = res7[1];
 
             sm4.sm4_setkey_enc(context, FileManager.hexToBytes("00AABBCCDDEEFF112233445566778899"));
-            bData11 = sm4.sm4_crypt_cbc(context, FileManager.hexToBytes("00000000000000000000000000000000"), FileManager.hexToBytes(challenge7));
+            bData11 = sm4.sm4_crypt_cbc(context,
+                    FileManager.hexToBytes("00000000000000000000000000000000"),
+                    FileManager.hexToBytes(challenge7));
 
             beginTime();
-            String[] result11 = mSafetyCardMT2.importSeedKey("0002", FileManager.bytesToHex(bData11));
+            String[] result11 =
+                    mSafetyCardMT2.importSeedKey("0002", FileManager.bytesToHex(bData11));
             if (result11[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result11[0])) {
                 endTime2();
                 zLogAppend("importSeedKey 成功！" + "用时：" + mUseTime + "ms");
@@ -561,13 +802,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             String challenge8 = res8[1];
 
             sm4.sm4_setkey_enc(context, FileManager.hexToBytes(challenge7.substring(0, 32)));
-            bData = sm4.sm4_crypt_cbc(context, FileManager.hexToBytes("00000000000000000000000000000000"), FileManager.hexToBytes(challenge7));
+            bData = sm4.sm4_crypt_cbc(context,
+                    FileManager.hexToBytes("00000000000000000000000000000000"),
+                    FileManager.hexToBytes(challenge7));
 
-            sm4.sm4_setkey_enc(context, FileManager.hexToBytes(FileManager.bytesToHex(bData).substring(0, 32)));
-            byte[] bData3 = sm4.sm4_crypt_cbc(context, FileManager.hexToBytes("00000000000000000000000000000000"), FileManager.hexToBytes(challenge8));
+            sm4.sm4_setkey_enc(context,
+                    FileManager.hexToBytes(FileManager.bytesToHex(bData).substring(0, 32)));
+            byte[] bData3 = sm4.sm4_crypt_cbc(context,
+                    FileManager.hexToBytes("00000000000000000000000000000000"),
+                    FileManager.hexToBytes(challenge8));
 
             beginTime();
-            String[] result12 = mSafetyCardMT2.conversationDataDecrypt(packge, FileManager.bytesToHex(bData3));
+            String[] result12 =
+                    mSafetyCardMT2.conversationDataDecrypt(packge, FileManager.bytesToHex(bData3));
             if (result12[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result12[0])) {
                 endTime2();
                 zLogAppend("conversationDataDecrypt 成功！" + "用时：" + mUseTime + "ms");
@@ -575,13 +822,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 endTime2();
                 zLogAppend("conversationDataDecrypt error！" + "用时：" + mUseTime + "ms");
             }
-
-
         } catch (Exception e) {
         }
     }
-
-
 
     private void sm2_speed_test() {
 
@@ -603,7 +846,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             zLogAppend("\nsm2GetPubKey," + "用时：" + mUseTime + "ms");
 
             beginTime();
-            String[] result = mSafetyCardMT2.SM2PublicKeyEnc("0201", "0011223344556677889988AABBCCDDEE");
+            String[] result =
+                    mSafetyCardMT2.SM2PublicKeyEnc("0201", "0011223344556677889988AABBCCDDEE");
             endTime2();
             zLogAppend("\nsm2Encrypt(16bytes)," + "用时：" + mUseTime + "ms");
 
@@ -632,48 +876,46 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             endTime2();
             zLogAppend("\nsm2Verify(32bytes)," + "用时：" + mUseTime + "ms");
 
-            String data = "0102030405060708010203040506070801020304050607080102030405060708010203040506070801020304050607080102030405060708010203040506070801020304050607080102030405060708010203040506070801020304050607080102030405060708010203040506070801020304050607080102030405060708";
+            String data =
+                    "0102030405060708010203040506070801020304050607080102030405060708010203040506070801020304050607080102030405060708010203040506070801020304050607080102030405060708010203040506070801020304050607080102030405060708010203040506070801020304050607080102030405060708";
 
             beginTime();
             mSafetyCardMT2.digestCal("01", "03", data);
             mSafetyCardMT2.digestCal("01", "03", data);
             endTime2();
             zLogAppend("\nsm3Calc(256bytes)," + "用时：" + mUseTime + "ms");
-
         } catch (Exception e) {
         }
-
     }
 
     private void sm4_speed_test() {
 
         try {
 
-//            final String data = "0102030405060708010203040506070801020304050607080102030405060708010203040506070801020304050607080102030405060708010203040506070801020304050607080102030405060708010203040506070801020304050607080102030405060708010203040506070801020304050607080102030405060708";
-//            beginTime();
-//            mSafetyCardMT2.sessionKeyEncECB("01", "00000000", data);
-//            for (int i = 0; i < 6; i++) {
-//                mSafetyCardMT2.sessionKeyEncECB("02", "00000000", data);
-//            }
-//            String[] rec1 = mSafetyCardMT2.sessionKeyEncECB("03", "00000000", data);
-//            endTime2();
-//            zLog("\nsm4Encrypt(1024 bytes)," + "用时：" + mUseTime + "ms");
-//            double duration = mUseTime / 8.0000;
-//            double duration1 = 1024 * 8 * 1000.0000 / mUseTime / 1000.0000 * 1024 / 1000.0000;
-//            zLogAppend("平均单次" + "用时：" + duration + "ms" + "\n性能：" + duration1 + "Kbps");
-//
-//            beginTime();
-//            mSafetyCardMT2.sessionKeyDecECB("01", "00000000", rec1[1]);
-//            for (int i = 0; i < 6; i++) {
-//                mSafetyCardMT2.sessionKeyDecECB("02", "00000000", rec1[1]);
-//            }
-//            mSafetyCardMT2.sessionKeyDecECB("03", "00000000", rec1[1]);
-//            endTime2();
-//            zLogAppend("\nsm4Decrypt(1024 bytes)," + "用时：" + mUseTime + "ms");
-//            double duration2 = mUseTime / 8.0000;
-//            double duration3 = 1024 * 8 * 1000.0000 / mUseTime / 1000.0000 * 1024 / 1000.0000;
-//            zLogAppend("平均单次" + "用时：" + duration2 + "ms" + "\n性能：" + duration3 + "Kbps");
-
+            //            final String data = "0102030405060708010203040506070801020304050607080102030405060708010203040506070801020304050607080102030405060708010203040506070801020304050607080102030405060708010203040506070801020304050607080102030405060708010203040506070801020304050607080102030405060708";
+            //            beginTime();
+            //            mSafetyCardMT2.sessionKeyEncECB("01", "00000000", data);
+            //            for (int i = 0; i < 6; i++) {
+            //                mSafetyCardMT2.sessionKeyEncECB("02", "00000000", data);
+            //            }
+            //            String[] rec1 = mSafetyCardMT2.sessionKeyEncECB("03", "00000000", data);
+            //            endTime2();
+            //            zLog("\nsm4Encrypt(1024 bytes)," + "用时：" + mUseTime + "ms");
+            //            double duration = mUseTime / 8.0000;
+            //            double duration1 = 1024 * 8 * 1000.0000 / mUseTime / 1000.0000 * 1024 / 1000.0000;
+            //            zLogAppend("平均单次" + "用时：" + duration + "ms" + "\n性能：" + duration1 + "Kbps");
+            //
+            //            beginTime();
+            //            mSafetyCardMT2.sessionKeyDecECB("01", "00000000", rec1[1]);
+            //            for (int i = 0; i < 6; i++) {
+            //                mSafetyCardMT2.sessionKeyDecECB("02", "00000000", rec1[1]);
+            //            }
+            //            mSafetyCardMT2.sessionKeyDecECB("03", "00000000", rec1[1]);
+            //            endTime2();
+            //            zLogAppend("\nsm4Decrypt(1024 bytes)," + "用时：" + mUseTime + "ms");
+            //            double duration2 = mUseTime / 8.0000;
+            //            double duration3 = 1024 * 8 * 1000.0000 / mUseTime / 1000.0000 * 1024 / 1000.0000;
+            //            zLogAppend("平均单次" + "用时：" + duration2 + "ms" + "\n性能：" + duration3 + "Kbps");
 
             String[] res2 = mSafetyCardMT2.TransmitSIMApdu("00A40804047F206F07");
             if (res2[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(res2[0])) {
@@ -695,15 +937,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             } else {
                 zLogAppend("获取SIM卡的IMSI:" + res4[0]);
             }
-
         } catch (Exception e) {
         }
-
     }
 
     private void safety_house1() {
 
-        String pubKey = "B9766242AF810574D9CF60B5D0A92B0D426E0E9B34F9A575ACAA64FD559330AA72D436A2C4BD2D71EF020520E650C721D63E6D1CB873FBD9C3E2712DC5E26E0B";
+        String pubKey =
+                "B9766242AF810574D9CF60B5D0A92B0D426E0E9B34F9A575ACAA64FD559330AA72D436A2C4BD2D71EF020520E650C721D63E6D1CB873FBD9C3E2712DC5E26E0B";
         String priKey = "8C96B7EB36950B97F3A77152030F2E216B87FC87E1971CB8AF7694858CA81E64";
 
         String DBAKEY1 = "1111111111111111111111111111111111111111111111111111111111111111";
@@ -781,7 +1022,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 zLogAppend("导入使用DBAKey加密后的会话密钥 error" + result3[0]);
             }
 
-
             String[] result5 = mSafetyCardMT2.decryptByDBASessionKey(cipher);
             if (result5[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result5[0])) {
                 zLogAppend("使用DBA会话密钥解密 :" + result5[1]);
@@ -796,7 +1036,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 zLogAppend("导入使用DBAKey加密后的会话密钥 error" + result6[0]);
             }
 
-
             String[] result7 = mSafetyCardMT2.decryptByDBASessionKey(cipher);
             if (result7[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result7[0])) {
                 zLogAppend("使用DBA会话密钥解密 :" + result7[1]);
@@ -810,7 +1049,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             String reHashData = "";
             String[] result8 = mSafetyCardMT2.getChallenge("70");
             if (result8[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result8[0])) {
-//                zLog("取随机数:" + result8[1]);
+                //                zLog("取随机数:" + result8[1]);
                 random = result8[1];
             } else {
                 zLogAppend("取随机数 error" + result8[0]);
@@ -832,18 +1071,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 zLogAppend("SM3 sign error" + result10[0]);
             }
 
-
-            String[] result11 = mSafetyCardMT2.SM2VerifyWithPubKey("00", pubKey, signData, hashData);
+            String[] result11 =
+                    mSafetyCardMT2.SM2VerifyWithPubKey("00", pubKey, signData, hashData);
             if (result11[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result11[0])) {
                 zLogAppend("验签 ‘00’：数据不需卡内再次HASH: 成功" + result11[1]);
             } else {
                 zLogAppend("验签 ‘00’：数据不需卡内再次HASH" + result11[0]);
             }
 
-
             String[] result12 = mSafetyCardMT2.getChallenge("70");
             if (result12[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result12[0])) {
-//                zLog("取随机数:" + result8[1]);
+                //                zLog("取随机数:" + result8[1]);
                 random = result12[1];
             } else {
                 zLogAppend("取随机数 error" + result12[0]);
@@ -873,8 +1111,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 zLogAppend("SM3 sign error" + result15[0]);
             }
 
-
-            String[] result16 = mSafetyCardMT2.SM2VerifyWithPubKey("01", pubKey, signData, hashData);
+            String[] result16 =
+                    mSafetyCardMT2.SM2VerifyWithPubKey("01", pubKey, signData, hashData);
             if (result16[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result16[0])) {
                 zLogAppend("验签 ‘01’：数据需要卡内再次HASH: 成功" + result16[1]);
             } else {
@@ -919,21 +1157,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             } else {
                 zLogAppend("清除所有DBA密钥 error" + result21[0]);
             }
-
-
         } catch (Exception e) {
         }
-
     }
 
     private void safety_house() {
 
-        String pubKey = "B9766242AF810574D9CF60B5D0A92B0D426E0E9B34F9A575ACAA64FD559330AA72D436A2C4BD2D71EF020520E650C721D63E6D1CB873FBD9C3E2712DC5E26E0B";
+        String pubKey =
+                "B9766242AF810574D9CF60B5D0A92B0D426E0E9B34F9A575ACAA64FD559330AA72D436A2C4BD2D71EF020520E650C721D63E6D1CB873FBD9C3E2712DC5E26E0B";
         String priKey = "8C96B7EB36950B97F3A77152030F2E216B87FC87E1971CB8AF7694858CA81E64";
 
         try {
 
-            String[] result = mSafetyCardMT2.singlePointEncryptFirstStep(pubKey, "0001", "0201", "0203");
+            String[] result =
+                    mSafetyCardMT2.singlePointEncryptFirstStep(pubKey, "0001", "0201", "0203");
             if (result[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result[0])) {
                 zLog("单点加密生成会话密钥（第一步） : 成功" + result[1]);
             } else {
@@ -975,7 +1212,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             } else {
                 zLogAppend("SM3 error" + result3[0]);
             }
-            String[] result4 = mSafetyCardMT2.digestCal("03", "03", B.substring(B.length() / 2, B.length()));
+            String[] result4 =
+                    mSafetyCardMT2.digestCal("03", "03", B.substring(B.length() / 2, B.length()));
             if (result4[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result4[0])) {
                 zLogAppend("SM3 最后一块 : 成功" + result4[1]);
             } else {
@@ -1054,14 +1292,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 zLogAppend("创建DBA密钥文件 error" + result12[0]);
             }
 
-
             String DBAKEY1 = "1111111111111111111111111111111111111111111111111111111111111111";
             String DBAKEY2 = "2222222222222222222222222222222222222222222222222222222222222222";
             String DBAKEY3 = "3333333333333333333333333333333333333333333333333333333333333333";
             String DBAKEY4 = "4444444444444444444444444444444444444444444444444444444444444444";
 
-            String plain = "0001" + DBAKEY1 + "0002" + DBAKEY2 + "0003" + DBAKEY3 + "0004" + DBAKEY4;
-//            String plain = "0001" + DBAKEY1 + "0002" + DBAKEY2 ;
+            String plain =
+                    "0001" + DBAKEY1 + "0002" + DBAKEY2 + "0003" + DBAKEY3 + "0004" + DBAKEY4;
+            //            String plain = "0001" + DBAKEY1 + "0002" + DBAKEY2 ;
 
             String[] result14 = mSafetyCardMT2.SM2PublicKeyEnc("0203", plain);
             if (result14[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result14[0])) {
@@ -1079,7 +1317,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 zLogAppend("指定SM2公钥加密导入多条DBA密钥 error" + result15[0]);
             }
 
-//            String[] result13 = mSafetyCardMT2.exportMultipleDBAKey(pubKey, "000100020003");
+            //            String[] result13 = mSafetyCardMT2.exportMultipleDBAKey(pubKey, "000100020003");
             String[] result13 = mSafetyCardMT2.exportMultipleDBAKey(pubKey, "00010002");
             if (result13[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result13[0])) {
                 zLogAppend("指定SM2公钥加密导出多条DBA密钥 : " + result13[1]);
@@ -1087,14 +1325,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 zLogAppend("指定SM2公钥加密导出多条DBA密钥 error" + result13[0]);
             }
 
-
             String[] result16 = mSafetyCardMT2.SM2PrivateKeyDec("0204", result13[1].substring(2));
             if (result16[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result16[0])) {
                 zLogAppend("SM2解密 : " + result16[1]);
             } else {
                 zLogAppend("SM2解密 error" + result16[0]);
             }
-
 
             String HMACSHA1_data = "00112233445566778899AABBCCDDEEFF";
 
@@ -1145,10 +1381,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 zLogAppend("HMACSHA1 计算 error" + result34[0]);
             }
 
-
             data = DBAKEY3 + DBAKEY1;
 
-            String[] result17 = mSafetyCardMT2.instantMessagingEncrypt("00", pubKey, "0001", "0204", data);
+            String[] result17 =
+                    mSafetyCardMT2.instantMessagingEncrypt("00", pubKey, "0001", "0204", data);
             if (result17[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result17[0])) {
                 zLogAppend("即时通信数据加密 : " + result17[1]);
             } else {
@@ -1172,8 +1408,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 zLogAppend("Instant Messaging Decrypt 测试通过！");
             }
 
-
-            String[] result19 = mSafetyCardMT2.instantMessagingEncrypt("01", pubKey, "0001", "0204", data);
+            String[] result19 =
+                    mSafetyCardMT2.instantMessagingEncrypt("01", pubKey, "0001", "0204", data);
             if (result19[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result19[0])) {
                 zLogAppend("即时通信数据加密 首块 : " + result19[1]);
             } else {
@@ -1205,21 +1441,24 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             Sign = result21[1].substring(128, 256);
 
             zLogAppend("M1 : " + M1);
-            String[] result22 = mSafetyCardMT2.instantMessagingDecrypt("01", Rp, "0001", "0204", M1.substring(0, 128));
+            String[] result22 = mSafetyCardMT2.instantMessagingDecrypt("01", Rp, "0001", "0204",
+                    M1.substring(0, 128));
             if (result22[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result22[0])) {
                 zLogAppend("即时通信数据解密 首块 : " + result22[1]);
             } else {
                 zLogAppend("即时通信数据解密 首块 error" + result22[0]);
             }
 
-            String[] result23 = mSafetyCardMT2.instantMessagingDecrypt("02", "", "", "", M1.substring(128, 256));
+            String[] result23 = mSafetyCardMT2.instantMessagingDecrypt("02", "", "", "",
+                    M1.substring(128, 256));
             if (result23[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result23[0])) {
                 zLogAppend("即时通信数据解密 中间块 : " + result23[1]);
             } else {
                 zLogAppend("即时通信数据解密 中间块 error" + result23[0]);
             }
 
-            String[] result24 = mSafetyCardMT2.instantMessagingDecrypt("03", "", "", "", M1.substring(256, 384));
+            String[] result24 = mSafetyCardMT2.instantMessagingDecrypt("03", "", "", "",
+                    M1.substring(256, 384));
             if (result24[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result24[0])) {
                 zLogAppend("即时通信数据解密 尾块 : " + result24[1]);
             } else {
@@ -1236,11 +1475,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 zLogAppend("密钥协商,用户A操作 error" + result25[0]);
             }
 
-
             String Rp1 = result25[1].substring(0, 256);
             String Sign1 = result25[1].substring(256, 384);
 
-            String[] result26 = mSafetyCardMT2.keyExchangeUserB("00", pubKey, "0001", "0204", "", "");
+            String[] result26 =
+                    mSafetyCardMT2.keyExchangeUserB("00", pubKey, "0001", "0204", "", "");
             if (result26[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result26[0])) {
                 zLogAppend("密钥协商,用户B操作 首包 : " + result26[1]);
             } else {
@@ -1253,12 +1492,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             } else {
                 zLogAppend("密钥协商,用户B操作 尾包 error" + result27[0]);
             }
-
-
         } catch (Exception e) {
 
         }
-
     }
 
     private void rsa() {
@@ -1381,13 +1617,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             zLogAppend("RSA1024 加密 " + endTimeA());
             zLogAppend("");
 
-//            String[] result9 = mSafetyCardMT2.RSAPublicKeyEnc("40", "01", "0301", data);
-//            if (result9[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result9[0])) {
-//                zLogAppend("RSA1280 加密 : 成功" + result9[1]);
-//                miwen1280 = result9[1];
-//            } else {
-//                zLogAppend("RSA1280 加密 error" + result9[0]);
-//            }
+            //            String[] result9 = mSafetyCardMT2.RSAPublicKeyEnc("40", "01", "0301", data);
+            //            if (result9[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result9[0])) {
+            //                zLogAppend("RSA1280 加密 : 成功" + result9[1]);
+            //                miwen1280 = result9[1];
+            //            } else {
+            //                zLogAppend("RSA1280 加密 error" + result9[0]);
+            //            }
             beginTime();
             String[] result10 = mSafetyCardMT2.RSAPrivateKeyDec("40", "00", "0302", miwen);
             if (result10[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result10[0])) {
@@ -1421,7 +1657,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             zLogAppend("");
 
             beginTime();
-            String[] result13 = mSafetyCardMT2.RSAPublicKeyVerify("40", "80", "0301", hashData, signData);
+            String[] result13 =
+                    mSafetyCardMT2.RSAPublicKeyVerify("40", "80", "0301", hashData, signData);
             if (result13[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result13[0])) {
                 zLogAppend("RSA1024 验签 : 成功" + result13[1]);
             } else {
@@ -1436,9 +1673,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             zLogAppend("");
 
-
-            String exRsaPubKey1024 = "C166AC3ADE54D840DE647D2BC8BF2E07981C60985DA66698FBA6C38CC686A8186FC7E1E39BB5E942C7810AA39D51E84950AB2E3B3CEF1C3B7D4548CCB45D24F76EA45461C91D3C4F22EEED728A910C786A16ABE7297B7CFBEA52EC1BCD16C84591F862E3F659CADCA9E4F678C31D19EF519A7B2947FCAD75F4FA2A2363BA033F";
-            String exRsaPriKey1024 = "97DD8DC4B42D1F9AE0873C1B1389BC154E8689FB5B1E7D5607D5CD9C4F9011930EC38047804FFA18EC1C1244A4165B36A6D7A477F3C3370227BE2E0A405F1BD4A9DFEDCFD1DD91953C95321B6784A16168F8B11E7FE2EC283A7B6D2C1D97FA5132215E876A64E927B507AEEE60087E59655323EC884E84A471814D66A98AB191";
+            String exRsaPubKey1024 =
+                    "C166AC3ADE54D840DE647D2BC8BF2E07981C60985DA66698FBA6C38CC686A8186FC7E1E39BB5E942C7810AA39D51E84950AB2E3B3CEF1C3B7D4548CCB45D24F76EA45461C91D3C4F22EEED728A910C786A16ABE7297B7CFBEA52EC1BCD16C84591F862E3F659CADCA9E4F678C31D19EF519A7B2947FCAD75F4FA2A2363BA033F";
+            String exRsaPriKey1024 =
+                    "97DD8DC4B42D1F9AE0873C1B1389BC154E8689FB5B1E7D5607D5CD9C4F9011930EC38047804FFA18EC1C1244A4165B36A6D7A477F3C3370227BE2E0A405F1BD4A9DFEDCFD1DD91953C95321B6784A16168F8B11E7FE2EC283A7B6D2C1D97FA5132215E876A64E927B507AEEE60087E59655323EC884E84A471814D66A98AB191";
 
             beginTime();
             String[] result14 = mSafetyCardMT2.importRSAPubKey("00", "0303", exRsaPubKey1024);
@@ -1491,7 +1729,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             } else {
                 zLogAppend("导出RSA1024 公钥 error" + result19[0]);
             }
-
         } catch (Exception e) {
             zLog("发送异常" + e.getMessage());
         }
@@ -1513,7 +1750,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             zLogAppend("");
 
             beginTime();
-            String[] result2 = mSafetyCardMT2.importSymmKey((byte) 0x02, (byte) 0x01, "414446312D49544B414446312D49544C");
+            String[] result2 = mSafetyCardMT2.importSymmKey((byte) 0x02, (byte) 0x01,
+                    "414446312D49544B414446312D49544C");
             if (result2[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result2[0])) {
                 zLogAppend("明文导入对称密钥 01 : 成功" + result2[1]);
             } else {
@@ -1522,13 +1760,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             zLogAppend("明文导入对称密钥 01 " + endTimeA());
             zLogAppend("");
 
-            String[] result28 = mSafetyCardMT2.importSymmKey((byte) 0x02, (byte) 0x02, "414446312D49544B414446312D49544B");
+            String[] result28 = mSafetyCardMT2.importSymmKey((byte) 0x02, (byte) 0x02,
+                    "414446312D49544B414446312D49544B");
             if (result28[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result28[0])) {
                 zLogAppend("明文导入对称密钥 02 : 成功" + result28[1]);
             } else {
                 zLogAppend("明文导入对称密钥 error" + result28[0]);
             }
-            String[] result8 = mSafetyCardMT2.importSymmKey((byte) 0x02, (byte) 0x03, "414446312D49544B414446312D49545A");
+            String[] result8 = mSafetyCardMT2.importSymmKey((byte) 0x02, (byte) 0x03,
+                    "414446312D49544B414446312D49545A");
             if (result8[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result8[0])) {
                 zLogAppend("明文导入对称密钥 03 : 成功" + result8[1]);
             } else {
@@ -1584,7 +1824,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
 
             beginTime();
-            String[] result10 = mSafetyCardMT2.importSymmetricKey((byte) 0x05, 4, "02", "", "0202", miwen);
+            String[] result10 =
+                    mSafetyCardMT2.importSymmetricKey((byte) 0x05, 4, "02", "", "0202", miwen);
             if (result10[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result10[0])) {
                 zLogAppend("非对称密钥加密导入 对称密钥 4:" + result10[1]);
             } else {
@@ -1603,7 +1844,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 zLogAppend("非对称密钥加密导出 对称密钥" + result9[0]);
             }
 
-            String[] result11 = mSafetyCardMT2.importSymmetricKey((byte) 0x00, 5, "02", "0002", "0202", miwen);
+            String[] result11 =
+                    mSafetyCardMT2.importSymmetricKey((byte) 0x00, 5, "02", "0002", "0202", miwen);
             if (result11[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result11[0])) {
                 zLogAppend("对称密钥加密导入 对称密钥 5:" + result11[1]);
             } else {
@@ -1643,7 +1885,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
 
             beginTime();
-            String[] result16 = mSafetyCardMT2.exportPublicKeyBySymmetricKey((byte) 0x02, 3, "0201");
+            String[] result16 =
+                    mSafetyCardMT2.exportPublicKeyBySymmetricKey((byte) 0x02, 3, "0201");
             if (result16[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result16[0])) {
                 zLogAppend("使用对称密钥3 加密导出 SM2公钥 0201:" + result16[1]);
                 miwen = "";
@@ -1654,10 +1897,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             zLogAppend("使用对称密钥3 加密导出 SM2公钥 0201 " + endTimeA());
             zLogAppend("");
 
-            String SM2PubKeyCipher = "4B8E5EC717F36F3886D20C558499E74E973A18B490AB13B7662C0041039D9ADDE93BC85FD95F1C81BE20A76ABB1FA689D3CB5291C0712986C384231606350DCE";
+            String SM2PubKeyCipher =
+                    "4B8E5EC717F36F3886D20C558499E74E973A18B490AB13B7662C0041039D9ADDE93BC85FD95F1C81BE20A76ABB1FA689D3CB5291C0712986C384231606350DCE";
 
             beginTime();
-            String[] result17 = mSafetyCardMT2.importSM2KeyBySymmetricKey((byte) 0x00, 3, "0205", SM2PubKeyCipher);
+            String[] result17 = mSafetyCardMT2.importSM2KeyBySymmetricKey((byte) 0x00, 3, "0205",
+                    SM2PubKeyCipher);
             if (result17[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result17[0])) {
                 zLogAppend("使用对称密钥3 加密导入 SM2公钥 0205:" + result17[1]);
             } else {
@@ -1666,10 +1911,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             zLogAppend("使用对称密钥3 加密导入 SM2公钥 0205 " + endTimeA());
             zLogAppend("");
 
-            String SM2PriKeyCipher = "F5888AF4C132CEA78DBD24563A63FD1C7BEA3D5A69007D1D4101BBE68C8AA0C9";
+            String SM2PriKeyCipher =
+                    "F5888AF4C132CEA78DBD24563A63FD1C7BEA3D5A69007D1D4101BBE68C8AA0C9";
 
             beginTime();
-            String[] result19 = mSafetyCardMT2.importSM2KeyBySymmetricKey((byte) 0x04, 3, "0206", SM2PriKeyCipher);
+            String[] result19 = mSafetyCardMT2.importSM2KeyBySymmetricKey((byte) 0x04, 3, "0206",
+                    SM2PriKeyCipher);
             if (result19[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result19[0])) {
                 zLogAppend("使用对称密钥3 加密导入 SM2私钥 0206:" + result19[1]);
             } else {
@@ -1685,7 +1932,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 zLogAppend("SM2 导出公钥 0205" + result18[0]);
             }
 
-            String[] result20 = mSafetyCardMT2.SM2PublicKeyEnc("0205", "0011223344556677889988AABBCCDDEE");
+            String[] result20 =
+                    mSafetyCardMT2.SM2PublicKeyEnc("0205", "0011223344556677889988AABBCCDDEE");
             if (result20[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result20[0])) {
                 zLogAppend("SM2公钥 0205 加密:" + result20[1]);
                 miwen = "";
@@ -1701,9 +1949,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 zLogAppend("SM2私钥 0206 解密" + result21[0]);
             }
 
-
             beginTime();
-            String[] result22 = mSafetyCardMT2.exportPublicKeyBySymmetricKey((byte) 0x00, 3, "0301");
+            String[] result22 =
+                    mSafetyCardMT2.exportPublicKeyBySymmetricKey((byte) 0x00, 3, "0301");
             if (result22[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result22[0])) {
                 zLogAppend("使用对称密钥3 加密导出 RSA1024公钥 0301:" + result22[1]);
             } else {
@@ -1713,15 +1961,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             zLogAppend("使用对称密钥3 加密导出 RSA1024公钥 0301 " + endTimeA());
             zLogAppend("");
 
-//            String exRsaPubKey1024 = "C166AC3ADE54D840DE647D2BC8BF2E07981C60985DA66698FBA6C38CC686A8186FC7E1E39BB5E942C7810AA39D51E84950AB2E3B3CEF1C3B7D4548CCB45D24F76EA45461C91D3C4F22EEED728A910C786A16ABE7297B7CFBEA52EC1BCD16C84591F862E3F659CADCA9E4F678C31D19EF519A7B2947FCAD75F4FA2A2363BA033F";
-//            String exRsaPriKey1024 = "97DD8DC4B42D1F9AE0873C1B1389BC154E8689FB5B1E7D5607D5CD9C4F9011930EC38047804FFA18EC1C1244A4165B36A6D7A477F3C3370227BE2E0A405F1BD4A9DFEDCFD1DD91953C95321B6784A16168F8B11E7FE2EC283A7B6D2C1D97FA5132215E876A64E927B507AEEE60087E59655323EC884E84A471814D66A98AB191";
+            //            String exRsaPubKey1024 = "C166AC3ADE54D840DE647D2BC8BF2E07981C60985DA66698FBA6C38CC686A8186FC7E1E39BB5E942C7810AA39D51E84950AB2E3B3CEF1C3B7D4548CCB45D24F76EA45461C91D3C4F22EEED728A910C786A16ABE7297B7CFBEA52EC1BCD16C84591F862E3F659CADCA9E4F678C31D19EF519A7B2947FCAD75F4FA2A2363BA033F";
+            //            String exRsaPriKey1024 = "97DD8DC4B42D1F9AE0873C1B1389BC154E8689FB5B1E7D5607D5CD9C4F9011930EC38047804FFA18EC1C1244A4165B36A6D7A477F3C3370227BE2E0A405F1BD4A9DFEDCFD1DD91953C95321B6784A16168F8B11E7FE2EC283A7B6D2C1D97FA5132215E876A64E927B507AEEE60087E59655323EC884E84A471814D66A98AB191";
 
-
-            String exRsaPubKey1024n = "32378EB9EA8B260CDF50B6A31ED6F0E7B9BFFFE286AA93E38DCF7E13B92DC920755E6DF65C21603A450E3CC0B47FE4FD2B8BFF2E45BC44D1A49474143360C3C89116B357813F18D6C31B78A63262D8A09F3B35F9E2F1C141C040172B0E296FF13DBDFF9B67196CB02714A5647DF97E2102168E8DAD808447F888FB8780C839F7";
-            String exRsaPriKey1024d = "757901401A6986FF08A4B030F67D810033EF3DE36CC390B309ED65F2449EF578C8115CD742D117E90DAB0FCB0F920C68D17675CA40F14E77CE71C620D7C5ED4CB508D395B468C3AA32F464C4B9BC7B9300CAE82A622B230499DFD9FC549A5EA06098F8C04594B922C4B04225F7F15D1E094461850024C27A050807B21DD8A58F";
+            String exRsaPubKey1024n =
+                    "32378EB9EA8B260CDF50B6A31ED6F0E7B9BFFFE286AA93E38DCF7E13B92DC920755E6DF65C21603A450E3CC0B47FE4FD2B8BFF2E45BC44D1A49474143360C3C89116B357813F18D6C31B78A63262D8A09F3B35F9E2F1C141C040172B0E296FF13DBDFF9B67196CB02714A5647DF97E2102168E8DAD808447F888FB8780C839F7";
+            String exRsaPriKey1024d =
+                    "757901401A6986FF08A4B030F67D810033EF3DE36CC390B309ED65F2449EF578C8115CD742D117E90DAB0FCB0F920C68D17675CA40F14E77CE71C620D7C5ED4CB508D395B468C3AA32F464C4B9BC7B9300CAE82A622B230499DFD9FC549A5EA06098F8C04594B922C4B04225F7F15D1E094461850024C27A050807B21DD8A58F";
 
             beginTime();
-            String[] result23 = mSafetyCardMT2.importRSAPubKeyBySymmetricKey((byte) 0x00, 3, "0305", exRsaPubKey1024n);
+            String[] result23 = mSafetyCardMT2.importRSAPubKeyBySymmetricKey((byte) 0x00, 3, "0305",
+                    exRsaPubKey1024n);
             if (result23[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result23[0])) {
                 zLogAppend("使用对称密钥3 加密导入 RSA1024公钥 0305:" + result23[1]);
             } else {
@@ -1730,9 +1980,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             zLogAppend("使用对称密钥3 加密导入 RSA1024公钥 0305 " + endTimeA());
             zLogAppend("");
 
-
             beginTime();
-            String[] result25 = mSafetyCardMT2.importRSAPriKeyBySymmetricKey((byte) 0x00, 3, "D", "0306", exRsaPriKey1024d);
+            String[] result25 =
+                    mSafetyCardMT2.importRSAPriKeyBySymmetricKey((byte) 0x00, 3, "D", "0306",
+                            exRsaPriKey1024d);
             if (result25[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result25[0])) {
                 zLogAppend("使用对称密钥3 加密导入 RSA1024私钥 0306 d:" + result25[1]);
             } else {
@@ -1742,7 +1993,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             zLogAppend("");
 
             beginTime();
-            String[] result24 = mSafetyCardMT2.importRSAPriKeyBySymmetricKey((byte) 0x00, 3, "N", "0306", exRsaPubKey1024n);
+            String[] result24 =
+                    mSafetyCardMT2.importRSAPriKeyBySymmetricKey((byte) 0x00, 3, "N", "0306",
+                            exRsaPubKey1024n);
             if (result24[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result24[0])) {
                 zLogAppend("使用对称密钥3 加密导入 RSA1024私钥 0306 n:" + result24[1]);
             } else {
@@ -1770,21 +2023,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             long t = System.currentTimeMillis();
 
-            String[] result29 = mSafetyCardMT2.DynamicPassword("01", "03", "06", "1234567890ABCDEF1234567890ABCDEF", t, 1234, "5678".toCharArray());
+            String[] result29 = mSafetyCardMT2.DynamicPassword("01", "03", "06",
+                    "1234567890ABCDEF1234567890ABCDEF", t, 1234, "5678".toCharArray());
             if (result29[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result29[0])) {
                 zLogAppend("DynamicPassword SM3: 成功" + (result29[1]));
             } else {
                 zLogAppend("DynamicPassword error" + result29[0]);
             }
             t = System.currentTimeMillis();
-            String[] result30 = mSafetyCardMT2.DynamicPassword("00", "04", "06", "0002", t, 1234, "5678".toCharArray());
+            String[] result30 = mSafetyCardMT2.DynamicPassword("00", "04", "06", "0002", t, 1234,
+                    "5678".toCharArray());
             if (result30[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result30[0])) {
                 zLogAppend("DynamicPassword SM4: 成功" + (result30[1]));
             } else {
                 zLogAppend("DynamicPassword error" + result30[0]);
             }
-
-
         } catch (Exception e) {
             zLog("发送异常" + e.getMessage());
         }
@@ -1859,7 +2112,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             zLogAppend("创建SM2私钥文件FID=0206 " + endTimeA());
             zLogAppend("");
 
-
             beginTime();
             String[] result39 = mSafetyCardMT2.createSM2PubkeyFile("0207");
             if (result39[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result39[0])) {
@@ -1881,7 +2133,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             zLogAppend("");
 
             beginTime();
-            //关联创建的公私秘钥
+            //关联创建的公私秘钥 公钥的文件标识符 私钥的文件标识符 01：导出公钥  00：不导出公钥
             String[] result5 = mSafetyCardMT2.generateSM2Key("0201", "0202", "01");
             if (result5[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result5[0])) {
                 zLogAppend("产生SM2密钥对，并同时导出公钥:" + result5[1]);
@@ -1892,7 +2144,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             zLogAppend("");
 
             beginTime();
-            String[] result6 = mSafetyCardMT2.SM2PublicKeyEnc("0201", "0011223344556677889988AABBCCDDEE");
+            String str;
+            str = HexUtil.strTo16("你好");
+            String[] result6 = mSafetyCardMT2.SM2PublicKeyEnc("0201", str);
             if (result6[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result6[0])) {
                 zLogAppend("SM2 加密:" + result6[1]);
                 miwen = result6[1];
@@ -1905,7 +2159,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             beginTime();
             String[] result7 = mSafetyCardMT2.SM2PrivateKeyDec("0202", miwen);
             if (result7[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result7[0])) {
-                zLogAppend("SM2 解密:" + result7[1]);
+                // zLogAppend("SM2 解密:" + result7[1]);
+                zLogAppend("SM2 解密:" + HexUtil.hexStringToString(result7[1]));
             } else {
                 zLogAppend("SM2 解密" + result7[0]);
             }
@@ -1949,7 +2204,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             zLogAppend("");
 
-            String pubKey = "B9766242AF810574D9CF60B5D0A92B0D426E0E9B34F9A575ACAA64FD559330AA72D436A2C4BD2D71EF020520E650C721D63E6D1CB873FBD9C3E2712DC5E26E0B";
+            String pubKey =
+                    "B9766242AF810574D9CF60B5D0A92B0D426E0E9B34F9A575ACAA64FD559330AA72D436A2C4BD2D71EF020520E650C721D63E6D1CB873FBD9C3E2712DC5E26E0B";
             String priKey = "8C96B7EB36950B97F3A77152030F2E216B87FC87E1971CB8AF7694858CA81E64";
 
             beginTime();
@@ -1982,7 +2238,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             zLogAppend("SM2 导出公钥 " + endTimeA());
             zLogAppend("");
 
-            String[] result14 = mSafetyCardMT2.SM2PublicKeyEnc("0203", "0011223344556677889988AABBCCDDEE");
+            String[] result14 =
+                    mSafetyCardMT2.SM2PublicKeyEnc("0203", "0011223344556677889988AABBCCDDEE");
             if (result14[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result14[0])) {
                 zLogAppend("SM2 加密:" + result14[1]);
                 miwen = result14[1];
@@ -1996,7 +2253,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             } else {
                 zLogAppend("SM2 解密" + result15[0]);
             }
-//
+            //
             String[] result16 = mSafetyCardMT2.digestCal("01", "03", data);
             if (result16[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result16[0])) {
                 zLogAppend("SM3 摘要:" + result16[1]);
@@ -2020,7 +2277,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 zLogAppend("SM2 验签" + result18[0]);
             }
 
-            String pubKey_1 = "2FB9F83762BBBC3504D1B3BF14E879766D24C01F28B4EFB6D8F9357BE31FFA3B4EFA2966EF7AC7AFFE1B3953133A10C8165BCA5A3239AE58258308F0BEF241FC";
+            String pubKey_1 =
+                    "2FB9F83762BBBC3504D1B3BF14E879766D24C01F28B4EFB6D8F9357BE31FFA3B4EFA2966EF7AC7AFFE1B3953133A10C8165BCA5A3239AE58258308F0BEF241FC";
             beginTime();
             String[] result21 = mSafetyCardMT2.importSM2PubKey("0207", pubKey_1);
             if (result21[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result21[0])) {
@@ -2034,7 +2292,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             //外部用随机数s对私钥进行加密得到数据a（算法SM4 ECB）
             String a = "3D0C0E9EDED6FFB1B70B586A62BFC2FFE6ACF407C22BFF4AFF4A99087FBC90B6";
             //外部使用卡内公钥对随机数s进行加密得到数据b（算法 SM2）
-            String b = "EB4A149D51A7FC9276B39591E57ED3E49A7D495905F5D0EBF7A29449B62191682E0BB0247324FE40C6EB4C869620AC5E56AC3220737068CD69ADD0569C009296B882BCA93DE0DB2C26BAB6800DC89B48ED18214B9AD9AEAE6986971533736681D93B37A20EC5171A68735721E817F34B";
+            String b =
+                    "EB4A149D51A7FC9276B39591E57ED3E49A7D495905F5D0EBF7A29449B62191682E0BB0247324FE40C6EB4C869620AC5E56AC3220737068CD69ADD0569C009296B882BCA93DE0DB2C26BAB6800DC89B48ED18214B9AD9AEAE6986971533736681D93B37A20EC5171A68735721E817F34B";
 
             String[] result22 = mSafetyCardMT2.importCipherSM2PriKey("0208", "0204", a, b);
             if (result22[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result22[0])) {
@@ -2045,7 +2304,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             zLogAppend("SM2 导入私钥 " + endTimeA());
             zLogAppend("");
 
-            String[] result23 = mSafetyCardMT2.SM2PublicKeyEnc("0207", "0011223344556677889988AABBCCDDEE");
+            String[] result23 =
+                    mSafetyCardMT2.SM2PublicKeyEnc("0207", "0011223344556677889988AABBCCDDEE");
             if (result23[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result23[0])) {
                 zLogAppend("SM2 加密(0207):" + result23[1]);
                 miwen = result23[1];
@@ -2059,19 +2319,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             } else {
                 zLogAppend("SM2 解密" + result15[0]);
             }
-
-
         } catch (Exception e) {
             zLog("发送异常" + e.getMessage());
         }
-
     }
 
     private void digestCal() {
 
         try {
 
-//            String data = "3031300d0609608648016503040206053031300d0609608648016503040206053031300d060960864801650304020605";
+            //            String data = "3031300d0609608648016503040206053031300d0609608648016503040206053031300d060960864801650304020605";
             String data = "646541321676431678";
 
             beginTime();
@@ -2103,11 +2360,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
             zLogAppend("SM3 摘要 " + endTimeA());
             zLogAppend("");
-
         } catch (Exception e) {
             zLog("发送异常" + e.getMessage());
         }
-
     }
 
     private void session_key() {
@@ -2149,7 +2404,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
 
             beginTime();
-            String[] result2 = mSafetyCardMT2.importSessionKey(1, "02", "11223344556677889900112233445566");
+            String[] result2 =
+                    mSafetyCardMT2.importSessionKey(1, "02", "11223344556677889900112233445566");
             if (result2[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result2[0])) {
                 zLogAppend("导入会话密钥 02: 成功" + result2[1]);
             } else {
@@ -2168,7 +2424,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             String sessionKeyMiwen = "";
 
             beginTime();
-            String[] result14 = mSafetyCardMT2.MT2ExportSessionKey((byte) 0x00, (byte) 0x02, (byte) 0x01, (byte) 0x01, "0201");
+            String[] result14 =
+                    mSafetyCardMT2.MT2ExportSessionKey((byte) 0x00, (byte) 0x02, (byte) 0x01,
+                            (byte) 0x01, "0201");
             if (result14[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result14[0])) {
                 zLogAppend("SM2加密导出会话密钥:" + result14[1]);
                 sessionKeyMiwen = result14[1].substring(4);
@@ -2179,7 +2437,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             zLogAppend("");
 
             beginTime();
-            String[] result15 = mSafetyCardMT2.MT2ImportSessionKey((byte) 0x03, (byte) 0x02, (byte) 0x01, (byte) 0x01, sessionKeyMiwen, "0202");
+            String[] result15 =
+                    mSafetyCardMT2.MT2ImportSessionKey((byte) 0x03, (byte) 0x02, (byte) 0x01,
+                            (byte) 0x01, sessionKeyMiwen, "0202");
             if (result15[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result15[0])) {
                 zLogAppend("SM2加密导入会话密钥:" + result15[1]);
             } else {
@@ -2188,21 +2448,24 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             zLogAppend("SM2加密导入会话密钥 03 " + endTimeA());
             zLogAppend("");
 
-            String[] result16 = mSafetyCardMT2.MT2ExportSessionKey((byte) 0x03, (byte) 0x02, (byte) 0x00, (byte) 0x01, "0202");
+            String[] result16 =
+                    mSafetyCardMT2.MT2ExportSessionKey((byte) 0x03, (byte) 0x02, (byte) 0x00,
+                            (byte) 0x01, "0202");
             if (result16[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result16[0])) {
                 zLogAppend("明文导出会话密钥:" + result16[1]);
             } else {
                 zLogAppend("明文导出会话密钥 error" + result16[0]);
             }
-//            String[] result17 = mSafetyCardMT2.MT2ExportSessionKey((byte) 0x04, (byte) 0x02, (byte) 0x00, (byte) 0x01, "0202");
-//            if (result17[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result17[0])) {
-//                zLogAppend("明文导出会话密钥:" + result17[1]);
-//            } else {
-//                zLogAppend("明文导出会话密钥 error" + result17[0]);
-//            }
+            //            String[] result17 = mSafetyCardMT2.MT2ExportSessionKey((byte) 0x04, (byte) 0x02, (byte) 0x00, (byte) 0x01, "0202");
+            //            if (result17[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result17[0])) {
+            //                zLogAppend("明文导出会话密钥:" + result17[1]);
+            //            } else {
+            //                zLogAppend("明文导出会话密钥 error" + result17[0]);
+            //            }
 
             beginTime();
-            String[] result6 = mSafetyCardMT2.sessionKeyEncECB("00", "00000000", "112233445566778899AABBCCDDEEFF00");
+            String[] result6 = mSafetyCardMT2.sessionKeyEncECB("00", "00000000",
+                    "112233445566778899AABBCCDDEEFF00");
             if (result6[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result6[0])) {
                 zLogAppend("会话秘钥加密 ECB:" + result6[1]);
                 plainECB = result6[1];
@@ -2223,7 +2486,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             zLogAppend("");
 
             beginTime();
-            String[] result8 = mSafetyCardMT2.sessionKeyEncCBC("00", "00000000", "12345678123456780123012301230123", "112233445566778899AABBCCDDEEFF00");
+            String[] result8 = mSafetyCardMT2.sessionKeyEncCBC("00", "00000000",
+                    "12345678123456780123012301230123", "112233445566778899AABBCCDDEEFF00");
             if (result8[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result8[0])) {
                 zLogAppend("会话秘钥加密 CBC:" + result8[1]);
                 plainCBC = result8[1];
@@ -2234,7 +2498,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             zLogAppend("");
 
             beginTime();
-            String[] result9 = mSafetyCardMT2.sessionKeyDecCBC("00", "00000000", "12345678123456780123012301230123", plainCBC);
+            String[] result9 = mSafetyCardMT2.sessionKeyDecCBC("00", "00000000",
+                    "12345678123456780123012301230123", plainCBC);
             if (result9[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result9[0])) {
                 zLogAppend("会话秘钥解密 CBC:" + result9[1]);
             } else {
@@ -2243,39 +2508,35 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             zLogAppend("会话秘钥解密 CBC " + endTimeA());
             zLogAppend("");
 
-
-//            String[] result17 = mSafetyCardMT2.importSessionKey(5, "02", "414446312d49544b414446312d49545A");
-//            if (result17[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result17[0])) {
-//                zLogAppend("导入会话密钥 5:" + result17[1]);
-//            } else {
-//                zLogAppend("导入会话密钥 error" + result17[0]);
-//            }
-//
-//            String[] result18 = mSafetyCardMT2.sessionKeyDecECB("00", "00000004", "FEFA1978E521FA60B50537C0FF0F96BC");
-//            if (result18[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result18[0])) {
-//                zLogAppend("会话秘钥解密 ECB:" + result18[1]);
-//            } else {
-//                zLogAppend("会话秘钥解密 ECB error" + result18[0]);
-//            }
-//
-//            String[] result19 = mSafetyCardMT2.MT2ExportSessionKey((byte) 0x04, (byte) 0x02, (byte) 0x00, (byte) 0x01, "0202");
-//            if (result19[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result19[0])) {
-//                zLogAppend("明文导出会话密钥:" + result19[1]);
-//            } else {
-//                zLogAppend("明文导出会话密钥 error" + result19[0]);
-//            }
+            //            String[] result17 = mSafetyCardMT2.importSessionKey(5, "02", "414446312d49544b414446312d49545A");
+            //            if (result17[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result17[0])) {
+            //                zLogAppend("导入会话密钥 5:" + result17[1]);
+            //            } else {
+            //                zLogAppend("导入会话密钥 error" + result17[0]);
+            //            }
+            //
+            //            String[] result18 = mSafetyCardMT2.sessionKeyDecECB("00", "00000004", "FEFA1978E521FA60B50537C0FF0F96BC");
+            //            if (result18[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result18[0])) {
+            //                zLogAppend("会话秘钥解密 ECB:" + result18[1]);
+            //            } else {
+            //                zLogAppend("会话秘钥解密 ECB error" + result18[0]);
+            //            }
+            //
+            //            String[] result19 = mSafetyCardMT2.MT2ExportSessionKey((byte) 0x04, (byte) 0x02, (byte) 0x00, (byte) 0x01, "0202");
+            //            if (result19[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result19[0])) {
+            //                zLogAppend("明文导出会话密钥:" + result19[1]);
+            //            } else {
+            //                zLogAppend("明文导出会话密钥 error" + result19[0]);
+            //            }
 
         } catch (Exception e) {
             zLog("发送异常" + e.getMessage());
         }
-
-
     }
 
     private void user_login() {
 
         try {
-
 
         } catch (Exception e) {
             zLog("发送异常" + e.getMessage());
@@ -2293,8 +2554,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             //SHA1_3:8627CA2E1423F863A7236879D9134BE1898EFED1
             //SHA1_4:D436E0E1F6E5E8464787E1AEABE6F59E1A3C40FE
             //SHA1_5:AA0D18C0C6F1DB127015518FAB27B34EE9CCA9CC
-            String[] result2 = mSafetyCardMT2.writeCardBaseInfo("00", "90000000000000015350504A27005350504A27017CAD24AAC1B78EBD8BE7F08225AD56F91BB2B8398722399D037A4D0B4C17583A2DFBEFD3F848B09E8627CA2E1423F863A7236879D9134BE1898EFED1D436E0E1F6E5E8464787E1AEABE6F59E1A3C40FEAA0D18C0C6F1DB127015518FAB27B34EE9CCA9CC");
-//            String[] result2 = mSafetyCardMT2.writeCardBaseInfo("00", "90000000000000015350504A27005350504A270165D0D48C301E5B54F40D880D39AB9C7104C671AC8722399D037A4D0B4C17583A2DFBEFD3F848B09E8627CA2E1423F863A7236879D9134BE1898EFED1D436E0E1F6E5E8464787E1AEABE6F59E1A3C40FEAA0D18C0C6F1DB127015518FAB27B34EE9CCA9CC");
+            String[] result2 = mSafetyCardMT2.writeCardBaseInfo("00",
+                    "90000000000000015350504A27005350504A27017CAD24AAC1B78EBD8BE7F08225AD56F91BB2B8398722399D037A4D0B4C17583A2DFBEFD3F848B09E8627CA2E1423F863A7236879D9134BE1898EFED1D436E0E1F6E5E8464787E1AEABE6F59E1A3C40FEAA0D18C0C6F1DB127015518FAB27B34EE9CCA9CC");
+            //            String[] result2 = mSafetyCardMT2.writeCardBaseInfo("00", "90000000000000015350504A27005350504A270165D0D48C301E5B54F40D880D39AB9C7104C671AC8722399D037A4D0B4C17583A2DFBEFD3F848B09E8627CA2E1423F863A7236879D9134BE1898EFED1D436E0E1F6E5E8464787E1AEABE6F59E1A3C40FEAA0D18C0C6F1DB127015518FAB27B34EE9CCA9CC");
             if (result2[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result2[0])) {
                 zLog("写入卡信息 成功:" + result2[1]);
             } else {
@@ -2325,7 +2587,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             } else {
                 zLogAppend("获取 SHA1 error" + result6[0]);
             }
-
         } catch (Exception e) {
             zLog("发送异常" + e.getMessage());
         }
@@ -2372,7 +2633,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             zLogAppend("修改PIN " + endTimeA());
             zLogAppend("");
 
-
             String[] result3 = mSafetyCardMT2.verifyPIN("313233343536");
             if (result3[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result3[0])) {
                 zLogAppend("验证PIN成功:" + result3[1]);
@@ -2405,11 +2665,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
             zLogAppend("验证PIN " + endTimeA());
             zLogAppend("");
-
         } catch (Exception e) {
             zLog("发送异常" + e.getMessage());
         }
-
     }
 
     private void read_binary_skf() {
@@ -2422,7 +2680,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                 String[] result = mSafetyCardMT2.createBinary(p1p2, data);//
                 if (result[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result[0])) {
-                    zLog("创建二进制文件 " + FileManager.IntToByteOneHex(i).toUpperCase() + ":" + result[1]);
+                    zLog("创建二进制文件 "
+                            + FileManager.IntToByteOneHex(i).toUpperCase()
+                            + ":"
+                            + result[1]);
                 } else {
                     zLog("创建二进制文件 error" + result[0]);
                     break;
@@ -2441,7 +2702,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             } else {
                 zLogAppend("读取二进制文件 error" + result3[0]);
             }
-//            String[] result2 = mSafetyCardMT2.updateBinary(1, "00", "1122334455112233445511223344551122334455112233445511223344551122334455112233445511223344551122334455112233445511223344551122334455112233445511223344551122334455112233445511223344551122334455112233445511223344551122334455112233445511223344551122334455112233", false);//
+            //            String[] result2 = mSafetyCardMT2.updateBinary(1, "00", "1122334455112233445511223344551122334455112233445511223344551122334455112233445511223344551122334455112233445511223344551122334455112233445511223344551122334455112233445511223344551122334455112233445511223344551122334455112233445511223344551122334455112233", false);//
             String[] result2 = mSafetyCardMT2.MT2updateBinary(1, 0, "1122334455");//
             if (result2[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result2[0])) {
                 zLogAppend("写二进制文件 偏移00:" + result2[1]);
@@ -2462,7 +2723,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 zLogAppend("读取二进制文件 error" + result5[0]);
             }
 
-
             String[] result6 = mSafetyCardMT2.MT2updateBinary(31, 0, "1313131313");//
             if (result6[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result6[0])) {
                 zLogAppend("写二进制文件 偏移00:" + result6[1]);
@@ -2482,11 +2742,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             } else {
                 zLogAppend("读取二进制文件 error" + result8[0]);
             }
-
         } catch (Exception e) {
         }
     }
-
 
     private void read_binary() {
         try {
@@ -2509,7 +2767,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
             zLogAppend("读取二进制文件 01 " + endTimeA());
             zLogAppend("");
-//            String[] result2 = mSafetyCardMT2.updateBinary(1, "00", "1122334455112233445511223344551122334455112233445511223344551122334455112233445511223344551122334455112233445511223344551122334455112233445511223344551122334455112233445511223344551122334455112233445511223344551122334455112233445511223344551122334455112233", false);//
+            //            String[] result2 = mSafetyCardMT2.updateBinary(1, "00", "1122334455112233445511223344551122334455112233445511223344551122334455112233445511223344551122334455112233445511223344551122334455112233445511223344551122334455112233445511223344551122334455112233445511223344551122334455112233445511223344551122334455112233", false);//
             beginTime();
             String[] result2 = mSafetyCardMT2.updateBinary(1, "00", "1122334455", false);//
             if (result2[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result2[0])) {
@@ -2519,12 +2777,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
             zLogAppend("写二进制文件 01 偏移00 " + endTimeA());
             zLogAppend("");
-//            String[] result10 = mSafetyCardMT2.getChallenge("08");
-//            if (result10[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result10[0])) {
-//                zLogAppend("取随机数:" + result10[1]);
-//            } else {
-//                zLogAppend("取随机数 error" + result10[0]);
-//            }
+            //            String[] result10 = mSafetyCardMT2.getChallenge("08");
+            //            if (result10[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result10[0])) {
+            //                zLogAppend("取随机数:" + result10[1]);
+            //            } else {
+            //                zLogAppend("取随机数 error" + result10[0]);
+            //            }
             beginTime();
             String[] result3 = mSafetyCardMT2.updateBinary(0, "40", "8877665544332211", false);//
             if (result3[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result3[0])) {
@@ -2534,7 +2792,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
             zLogAppend("写二进制文件 01 偏移40 " + endTimeA());
             zLogAppend("");
-
 
             beginTime();
             String[] result4 = mSafetyCardMT2.readBinary(0, "00", "", false);//
@@ -2546,14 +2803,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             zLogAppend("读取二进制文件 01 " + endTimeA());
             zLogAppend("");
 
-
             String[] result5 = mSafetyCardMT2.createBinary("EF02", "080080F0F200FF02");//
             if (result5[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result5[0])) {
                 zLogAppend("创建二进制文件 02:" + result5[1]);
             } else {
                 zLogAppend("创建二进制文件 02 error" + result5[0]);
             }
-
 
             String[] result7 = mSafetyCardMT2.updateBinary(2, "00", "66778899AA", false);//
             if (result7[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result7[0])) {
@@ -2573,7 +2828,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             } else {
                 zLogAppend("读取二进制文件 error" + result9[0]);
             }
-
         } catch (Exception e) {
             zLog("发送异常" + e.getMessage());
         }
@@ -2582,7 +2836,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private void create_key() {
         try {
 
-            String[] result = mSafetyCardMT2.createFile("ADF1", "18020000F1F1FFFFFFFFFFFFFFFF43534D5478303031");
+            String[] result = mSafetyCardMT2.createFile("ADF1",
+                    "18020000F1F1FFFFFFFFFFFFFFFF43534D5478303031");
             if (result[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result[0])) {
                 zLog("创建ADF:" + result[1]);
             } else {
@@ -2596,84 +2851,96 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 zLogAppend("创建KEY文件 error" + result1[0]);
             }
 
-            String[] result2 = mSafetyCardMT2.writeKey("00", "01", "F011040133436F7265536869656C644D5478303031", true);
+            String[] result2 = mSafetyCardMT2.writeKey("00", "01",
+                    "F011040133436F7265536869656C644D5478303031", true);
             if (result2[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result2[0])) {
                 zLogAppend("明文装载ADF1_MK:" + result2[1]);
             } else {
                 zLogAppend("明文装载ADF1_MK error" + result2[0]);
             }
 
-            String[] result3 = mSafetyCardMT2.writeKey("01", "01", "F02104FF334144463144414D4B4144463144414D4B", true);
+            String[] result3 = mSafetyCardMT2.writeKey("01", "01",
+                    "F02104FF334144463144414D4B4144463144414D4B", true);
             if (result3[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result3[0])) {
                 zLogAppend("明文装载DAMK (SM4):" + result3[1]);
             } else {
                 zLogAppend("明文装载DAMK error" + result3[0]);
             }
 
-            String[] result4 = mSafetyCardMT2.writeKey("01", "02", "F02100FF334144463144414D4B414446314441FFFF", true);
+            String[] result4 = mSafetyCardMT2.writeKey("01", "02",
+                    "F02100FF334144463144414D4B414446314441FFFF", true);
             if (result4[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result4[0])) {
                 zLogAppend("明文装载DAMK (3DES):" + result4[1]);
             } else {
                 zLogAppend("明文装载DAMK error" + result4[0]);
             }
 
-            String[] result5 = mSafetyCardMT2.writeKey("02", "01", "F01104FF33414446312D45544B414446312D45544B", true);
+            String[] result5 = mSafetyCardMT2.writeKey("02", "01",
+                    "F01104FF33414446312D45544B414446312D45544B", true);
             if (result5[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result5[0])) {
                 zLogAppend("明文装载ETK (SM4):" + result5[1]);
             } else {
                 zLogAppend("明文装载ETK error" + result5[0]);
             }
 
-            String[] result6 = mSafetyCardMT2.writeKey("02", "02", "F01100FF33414446312D45544B414446312D45FFFF", true);
+            String[] result6 = mSafetyCardMT2.writeKey("02", "02",
+                    "F01100FF33414446312D45544B414446312D45FFFF", true);
             if (result6[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result6[0])) {
                 zLogAppend("明文装载ETK (3DES):" + result6[1]);
             } else {
                 zLogAppend("明文装载ETK error" + result6[0]);
             }
 
-            String[] result7 = mSafetyCardMT2.writeKey("03", "01", "F01104FF33414446312D49544B414446312D49544B", true);
+            String[] result7 = mSafetyCardMT2.writeKey("03", "01",
+                    "F01104FF33414446312D49544B414446312D49544B", true);
             if (result7[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result7[0])) {
                 zLogAppend("明文装载ITK (SM4):" + result7[1]);
             } else {
                 zLogAppend("明文装载ITK error" + result7[0]);
             }
 
-            String[] result8 = mSafetyCardMT2.writeKey("03", "02", "F01100FF33414446312D49544B414446312D49FFFF", true);
+            String[] result8 = mSafetyCardMT2.writeKey("03", "02",
+                    "F01100FF33414446312D49544B414446312D49FFFF", true);
             if (result8[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result8[0])) {
                 zLogAppend("明文装载ITK (3DES):" + result8[1]);
             } else {
                 zLogAppend("明文装载ITK error" + result8[0]);
             }
 
-            String[] result9 = mSafetyCardMT2.writeKey("0A", "01", "F021FF0233313233343536FFFFFFFFFFFFFFFFFFFF", true);
+            String[] result9 = mSafetyCardMT2.writeKey("0A", "01",
+                    "F021FF0233313233343536FFFFFFFFFFFFFFFFFFFF", true);
             if (result9[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result9[0])) {
                 zLogAppend("明文装载PIN:" + result9[1]);
             } else {
                 zLogAppend("明文装载PIN error" + result9[0]);
             }
 
-            String[] result10 = mSafetyCardMT2.writeKey("07", "01", "F01104FF33414446312D50554B414446312D50554B", true);
+            String[] result10 = mSafetyCardMT2.writeKey("07", "01",
+                    "F01104FF33414446312D50554B414446312D50554B", true);
             if (result10[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result10[0])) {
                 zLogAppend("明文装载PUK (SM4):" + result10[1]);
             } else {
                 zLogAppend("明文装载PUK error" + result10[0]);
             }
 
-            String[] result11 = mSafetyCardMT2.writeKey("07", "02", "F01100FF33414446312D50554B414446312D50FFFF", true);
+            String[] result11 = mSafetyCardMT2.writeKey("07", "02",
+                    "F01100FF33414446312D50554B414446312D50FFFF", true);
             if (result11[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result11[0])) {
                 zLogAppend("明文装载PUK (3DES):" + result11[1]);
             } else {
                 zLogAppend("明文装载PUK error" + result11[0]);
             }
 
-            String[] result12 = mSafetyCardMT2.writeKey("08", "01", "F01104FF33414446312D52504B414446312D52504B", true);
+            String[] result12 = mSafetyCardMT2.writeKey("08", "01",
+                    "F01104FF33414446312D52504B414446312D52504B", true);
             if (result12[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result12[0])) {
                 zLogAppend("明文装载RPK (SM4):" + result12[1]);
             } else {
                 zLogAppend("明文装载RPK error" + result12[0]);
             }
 
-            String[] result13 = mSafetyCardMT2.writeKey("08", "02", "F01100FF33414446312D52504B414446312D52FFFF", true);
+            String[] result13 = mSafetyCardMT2.writeKey("08", "02",
+                    "F01100FF33414446312D52504B414446312D52FFFF", true);
             if (result13[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result13[0])) {
                 zLogAppend("明文装载RPK (3DES):" + result13[1]);
             } else {
@@ -2687,7 +2954,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 zLogAppend("选择文件MF error" + result14[0]);
             }
 
-
             //外部认证
             byte bData[] = new byte[16];
             String[] res = mSafetyCardMT2.getChallengeA("10");
@@ -2696,7 +2962,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             SM4_Context context = new SM4_Context();
             context.isPadding = false;
             try {
-                sm4.sm4_setkey_enc(context, FileManager.hexToBytes("414446312D45544B414446312D45544B"));
+                sm4.sm4_setkey_enc(context,
+                        FileManager.hexToBytes("414446312D45544B414446312D45544B"));
                 bData = sm4.sm4_crypt_ecb(context, FileManager.hexToBytes(challenge));
             } catch (Exception e) {
                 e.printStackTrace();
@@ -2711,8 +2978,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             } else {
                 zLogAppend("外部认证 error" + result15[0]);
             }
-
-
         } catch (Exception e) {
             zLog("发送异常" + e.getMessage());
         }
@@ -2721,7 +2986,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private void create_1121_key() {
         try {
 
-            String[] result = mSafetyCardMT2.createFile("1121", "18020000F1F1FFFFFFFFFFFFFFFF3131323150726F6A656374");
+            String[] result = mSafetyCardMT2.createFile("1121",
+                    "18020000F1F1FFFFFFFFFFFFFFFF3131323150726F6A656374");
             if (result[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result[0])) {
                 zLogAppend("创建1121_ADF:" + result[1]);
             } else {
@@ -2735,41 +3001,45 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 zLogAppend("创建KEY文件 error" + result1[0]);
             }
 
-            String[] result2 = mSafetyCardMT2.writeKey("00", "01", "F011040133436F7265536869656C644D5478303031", true);
+            String[] result2 = mSafetyCardMT2.writeKey("00", "01",
+                    "F011040133436F7265536869656C644D5478303031", true);
             if (result2[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result2[0])) {
                 zLogAppend("明文装载1121_ADF1_MK:" + result2[1]);
             } else {
                 zLogAppend("明文装载1121_ADF1_MK error" + result2[0]);
             }
 
-            String[] result3 = mSafetyCardMT2.writeKey("01", "01", "F02104FF334144463144414D4B4144463144414D4B", true);
+            String[] result3 = mSafetyCardMT2.writeKey("01", "01",
+                    "F02104FF334144463144414D4B4144463144414D4B", true);
             if (result3[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result3[0])) {
                 zLogAppend("明文装载1121_DAMK (SM4):" + result3[1]);
             } else {
                 zLogAppend("明文装载1121_DAMK error" + result3[0]);
             }
 
-            String[] result5 = mSafetyCardMT2.writeKey("02", "01", "F01104FF33414446312D45544B414446312D45544B", true);
+            String[] result5 = mSafetyCardMT2.writeKey("02", "01",
+                    "F01104FF33414446312D45544B414446312D45544B", true);
             if (result5[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result5[0])) {
                 zLogAppend("明文装载1121_ETK (SM4):" + result5[1]);
             } else {
                 zLogAppend("明文装载1121_ETK error" + result5[0]);
             }
 
-            String[] result9 = mSafetyCardMT2.writeKey("0A", "01", "F021FF0233313233343536FFFFFFFFFFFFFFFFFFFF", true);
+            String[] result9 = mSafetyCardMT2.writeKey("0A", "01",
+                    "F021FF0233313233343536FFFFFFFFFFFFFFFFFFFF", true);
             if (result9[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result9[0])) {
                 zLogAppend("明文装载1121_PIN:" + result9[1]);
             } else {
                 zLogAppend("明文装载1121_PIN error" + result9[0]);
             }
 
-            String[] result12 = mSafetyCardMT2.writeKey("08", "01", "F01104FF33414446312D52504B414446312D52504B", true);
+            String[] result12 = mSafetyCardMT2.writeKey("08", "01",
+                    "F01104FF33414446312D52504B414446312D52504B", true);
             if (result12[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result12[0])) {
                 zLogAppend("明文装载1121_RPK (SM4):" + result12[1]);
             } else {
                 zLogAppend("明文装载1121_RPK error" + result12[0]);
             }
-
 
             String[] result13 = mSafetyCardMT2.createFile("FFFC", "120100F2F200FF11");
             if (result13[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result13[0])) {
@@ -2798,27 +3068,29 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 zLogAppend("创建KEY error" + result[0]);
             }
 
-            String[] result1 = mSafetyCardMT2.writeKey("00", "01", "F011040133436F7265536869656C6453414D434F53", true);
+            String[] result1 = mSafetyCardMT2.writeKey("00", "01",
+                    "F011040133436F7265536869656C6453414D434F53", true);
             if (result1[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result1[0])) {
                 zLogAppend("明文装载MK:" + result1[1]);
             } else {
                 zLogAppend("明文装载MK error" + result1[0]);
             }
 
-            String[] result2 = mSafetyCardMT2.writeKey("01", "01", "F02104FF3344414D4B44414D4B44414D4B44414D4B", true);
+            String[] result2 = mSafetyCardMT2.writeKey("01", "01",
+                    "F02104FF3344414D4B44414D4B44414D4B44414D4B", true);
             if (result2[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result2[0])) {
                 zLogAppend("明文装载DAMK:" + result2[1]);
             } else {
                 zLogAppend("明文装载DAMK error" + result2[0]);
             }
 
-            String[] result4 = mSafetyCardMT2.writeKey("02", "01", "F011040133414446312D45544B414446312D45544B", true);
+            String[] result4 = mSafetyCardMT2.writeKey("02", "01",
+                    "F011040133414446312D45544B414446312D45544B", true);
             if (result4[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result4[0])) {
                 zLogAppend("明文装载ETK_DF01:" + result4[1]);
             } else {
                 zLogAppend("明文装载ETK_DF01 error" + result4[0]);
             }
-
         } catch (Exception e) {
             zLog("发送异常" + e.getMessage());
         }
@@ -2832,7 +3104,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             } else {
                 zLog("删除MF error" + result[0]);
             }
-
         } catch (Exception e) {
             zLog("发送异常" + e.getMessage());
         }
@@ -2843,13 +3114,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void sm4_calc() {
 
-
         new Thread() {
             public void run() {
                 beginTime();
                 String dataC = "";
 
-                final String data = "112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF00";
+                final String data =
+                        "112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF00";
 
                 String[] rec = mSafetyCardMT2.sessionKeyEncECB("01", "00000000", data);
 
@@ -2863,23 +3134,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     }
                 }
 
-
                 String[] rec1 = mSafetyCardMT2.sessionKeyEncECB("03", "00000000", data);
 
                 dataC = dataC + rec1[1];
 
                 endTime();
                 zLogAppend("dataC:" + dataC.length());
-
-
             }
 
             ;
         }.start();
-
-
     }
-
 
     private void sendAPDU(String capdu) {
         try {
@@ -2898,7 +3163,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     if (b) {
                         zLog("发现卡片");
                         zLogAppend("通道：" + mSafetyCardMT2.getChannelType());
-
                     } else {
                         zLog("未发现卡片");
                     }
@@ -2967,9 +3231,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         addPermission(permissionsList, Manifest.permission.READ_CONTACTS);
         addPermission(permissionsList, Manifest.permission.READ_PHONE_STATE);
         addPermission(permissionsList, Manifest.permission.WRITE_EXTERNAL_STORAGE);
-//    <uses-permission android:name="android.permission.WRITE_SMS"/>
-//    <uses-permission android:name="org.simalliance.openmobileapi.SMARTCARD" />
-//    <uses-permission android:name="org.simalliance.openmobileapi.BIND_TERMINAL" />
+        //    <uses-permission android:name="android.permission.WRITE_SMS"/>
+        //    <uses-permission android:name="org.simalliance.openmobileapi.SMARTCARD" />
+        //    <uses-permission android:name="org.simalliance.openmobileapi.BIND_TERMINAL" />
         if (permissionsList.size() > 0) {
             permissions = new String[permissionsList.size()];
             for (int i = 0; i < permissionsList.size(); i++) {
@@ -2987,7 +3251,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+            @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == 1003) {
             for (int i = 0; i < grantResults.length; i++) {
@@ -2998,13 +3263,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }
             }
             mSafetyCardMT2 = new SafetyCardMT2(this);
-//            mSafetyCardMT2.setFlag(cb1Flag, cb2Flag, cb3Flag, cb4Flag, cb5Flag, cb6Flag);
-//            mSafetyCard.setPrintLog(true);
-//            mUCard=new UCard(this,cb1Flag,cb2Flag,cb3Flag,cb4Flag);
-//            mUcardAPI=new UcardAPI(this);
+            //            mSafetyCardMT2.setFlag(cb1Flag, cb2Flag, cb3Flag, cb4Flag, cb5Flag, cb6Flag);
+            //            mSafetyCard.setPrintLog(true);
+            //            mUCard=new UCard(this,cb1Flag,cb2Flag,cb3Flag,cb4Flag);
+            //            mUcardAPI=new UcardAPI(this);
         }
     }
-
 
     public static String bytes2Hex(byte[] data) {
         if (data == null || data.length == 0) {
@@ -3021,80 +3285,174 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         return ret;
     }
 
-
     void initCheckBox() {
         cb1.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
-            public void onCheckedChanged(CompoundButton buttonView,
-                                         boolean isChecked) {
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
                     cb1Flag = true;
                 } else {
                     cb1Flag = false;
                 }
-                zLog("CheckBox1:" + cb1Flag + "; " + "CheckBox2:" + cb2Flag + "; " + "CheckBox3:" + cb3Flag + "; " + "CheckBox4:" + cb4Flag + "; " + "CheckBox5:" + cb5Flag + "; " + "CheckBox6:" + cb6Flag + "; ");
+                zLog("CheckBox1:"
+                        + cb1Flag
+                        + "; "
+                        + "CheckBox2:"
+                        + cb2Flag
+                        + "; "
+                        + "CheckBox3:"
+                        + cb3Flag
+                        + "; "
+                        + "CheckBox4:"
+                        + cb4Flag
+                        + "; "
+                        + "CheckBox5:"
+                        + cb5Flag
+                        + "; "
+                        + "CheckBox6:"
+                        + cb6Flag
+                        + "; ");
             }
         });
         cb2.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
-            public void onCheckedChanged(CompoundButton buttonView,
-                                         boolean isChecked) {
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
                     cb2Flag = true;
                 } else {
                     cb2Flag = false;
                 }
-                zLog("CheckBox1:" + cb1Flag + "; " + "CheckBox2:" + cb2Flag + "; " + "CheckBox3:" + cb3Flag + "; " + "CheckBox4:" + cb4Flag + "; " + "CheckBox5:" + cb5Flag + "; " + "CheckBox6:" + cb6Flag + "; ");
+                zLog("CheckBox1:"
+                        + cb1Flag
+                        + "; "
+                        + "CheckBox2:"
+                        + cb2Flag
+                        + "; "
+                        + "CheckBox3:"
+                        + cb3Flag
+                        + "; "
+                        + "CheckBox4:"
+                        + cb4Flag
+                        + "; "
+                        + "CheckBox5:"
+                        + cb5Flag
+                        + "; "
+                        + "CheckBox6:"
+                        + cb6Flag
+                        + "; ");
             }
         });
         cb3.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
-            public void onCheckedChanged(CompoundButton buttonView,
-                                         boolean isChecked) {
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
                     cb3Flag = true;
                 } else {
                     cb3Flag = false;
                 }
-                zLog("CheckBox1:" + cb1Flag + "; " + "CheckBox2:" + cb2Flag + "; " + "CheckBox3:" + cb3Flag + "; " + "CheckBox4:" + cb4Flag + "; " + "CheckBox5:" + cb5Flag + "; " + "CheckBox6:" + cb6Flag + "; ");
+                zLog("CheckBox1:"
+                        + cb1Flag
+                        + "; "
+                        + "CheckBox2:"
+                        + cb2Flag
+                        + "; "
+                        + "CheckBox3:"
+                        + cb3Flag
+                        + "; "
+                        + "CheckBox4:"
+                        + cb4Flag
+                        + "; "
+                        + "CheckBox5:"
+                        + cb5Flag
+                        + "; "
+                        + "CheckBox6:"
+                        + cb6Flag
+                        + "; ");
             }
         });
         cb4.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
-            public void onCheckedChanged(CompoundButton buttonView,
-                                         boolean isChecked) {
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
                     cb4Flag = true;
                 } else {
                     cb4Flag = false;
                 }
-                zLog("CheckBox1:" + cb1Flag + "; " + "CheckBox2:" + cb2Flag + "; " + "CheckBox3:" + cb3Flag + "; " + "CheckBox4:" + cb4Flag + "; " + "CheckBox5:" + cb5Flag + "; " + "CheckBox6:" + cb6Flag + "; ");
+                zLog("CheckBox1:"
+                        + cb1Flag
+                        + "; "
+                        + "CheckBox2:"
+                        + cb2Flag
+                        + "; "
+                        + "CheckBox3:"
+                        + cb3Flag
+                        + "; "
+                        + "CheckBox4:"
+                        + cb4Flag
+                        + "; "
+                        + "CheckBox5:"
+                        + cb5Flag
+                        + "; "
+                        + "CheckBox6:"
+                        + cb6Flag
+                        + "; ");
             }
         });
         cb5.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
-            public void onCheckedChanged(CompoundButton buttonView,
-                                         boolean isChecked) {
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
                     cb5Flag = true;
                 } else {
                     cb5Flag = false;
                 }
-                zLog("CheckBox1:" + cb1Flag + "; " + "CheckBox2:" + cb2Flag + "; " + "CheckBox3:" + cb3Flag + "; " + "CheckBox4:" + cb4Flag + "; " + "CheckBox5:" + cb5Flag + "; " + "CheckBox6:" + cb6Flag + "; ");
+                zLog("CheckBox1:"
+                        + cb1Flag
+                        + "; "
+                        + "CheckBox2:"
+                        + cb2Flag
+                        + "; "
+                        + "CheckBox3:"
+                        + cb3Flag
+                        + "; "
+                        + "CheckBox4:"
+                        + cb4Flag
+                        + "; "
+                        + "CheckBox5:"
+                        + cb5Flag
+                        + "; "
+                        + "CheckBox6:"
+                        + cb6Flag
+                        + "; ");
             }
         });
         cb6.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
-            public void onCheckedChanged(CompoundButton buttonView,
-                                         boolean isChecked) {
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
                     cb6Flag = true;
                 } else {
                     cb6Flag = false;
                 }
-                zLog("CheckBox1:" + cb1Flag + "; " + "CheckBox2:" + cb2Flag + "; " + "CheckBox3:" + cb3Flag + "; " + "CheckBox4:" + cb4Flag + "; " + "CheckBox5:" + cb5Flag + "; " + "CheckBox6:" + cb6Flag + "; ");
+                zLog("CheckBox1:"
+                        + cb1Flag
+                        + "; "
+                        + "CheckBox2:"
+                        + cb2Flag
+                        + "; "
+                        + "CheckBox3:"
+                        + cb3Flag
+                        + "; "
+                        + "CheckBox4:"
+                        + cb4Flag
+                        + "; "
+                        + "CheckBox5:"
+                        + cb5Flag
+                        + "; "
+                        + "CheckBox6:"
+                        + cb6Flag
+                        + "; ");
             }
         });
     }
-
 }
