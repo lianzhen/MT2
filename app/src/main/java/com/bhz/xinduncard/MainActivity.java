@@ -148,7 +148,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         findViewById(R.id.create_file).setOnClickListener(this);
         findViewById(R.id.sign_btn).setOnClickListener(this);
 
-
         mRet = (TextView) findViewById(R.id.result);
         mSenddata = (EditText) findViewById(R.id.senddata);
 
@@ -344,20 +343,30 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }.start();
                 break;
             case R.id.sha1_digest:
-                for (int i = 0; i < 10; i++) {
-                    test_sha1_digest();
-                }
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        test_sha1_digest();
+                    }
+                }).start();
 
                 break;
             case R.id.sha256_digest:
-                for (int i = 0; i < 10; i++) {
-                    test_sha256_digest();
-                }
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        test_sha256_digest();
+                    }
+                }).start();
+
                 break;
             case R.id.sm3_digest:
-                for (int i = 0; i < 10; i++) {
-                    test_sm3_digest();
-                }
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        test_sm3_digest();
+                    }
+                }).start();
                 break;
             case R.id.create_file:
                 createPubAndPriFile();
@@ -2613,6 +2622,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             } else {
                 zLogAppend("选择文件 error" + result1[0]);
             }
+
             zLogAppend("选择文件 " + endTimeA());
             zLogAppend("");
 
