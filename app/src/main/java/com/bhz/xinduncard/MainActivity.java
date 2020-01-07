@@ -2476,10 +2476,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             String[] result6 = mSafetyCardMT2.sessionKeyEncECB("00", "00000000",
                     "112233445566778899AABBCCDDEEFF00");
             if (result6[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result6[0])) {
-                zLogAppend("会话秘钥加密 ECB:" + result6[1]);
+                zLogAppend("会话秘钥加密 ECB---:" + result6[1]);
                 plainECB = result6[1];
             } else {
-                zLogAppend("会话秘钥加密 ECB error" + result6[0]);
+                zLogAppend("会话秘钥加密 ECB--- error" + result6[0]);
             }
             zLogAppend("会话秘钥加密 ECB " + endTimeA());
             zLogAppend("");

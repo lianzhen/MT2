@@ -50,6 +50,9 @@ public class TestAty extends AppCompatActivity {
     @BindView(R.id.btn_importSessionKey_MiWen) Button btnImportSessionKeyMiWen;
     @BindView(R.id.btn_exportSessionKey_MingWen) Button btnExportSessionKeyMingWen;
     @BindView(R.id.btn_exportSessionKey_MiWen) Button btnExportSessionKeyMiWen;
+    @BindView(R.id.btn_mt2_size) Button btnMt2Size;
+    @BindView(R.id.btn_SM4_Enc) Button btnSM4Enc;
+    @BindView(R.id.btn_SM4_Dec) Button btnSM4Dec;
     private SafetyCardMT2 mSafetyCardMT2;
     private String TAG = "TestAty";
     //导出的公钥值
@@ -60,6 +63,8 @@ public class TestAty extends AppCompatActivity {
     private String digestData = "";
     //私钥加签得到的值
     private String hashData = "";
+    //SM4加密后的秘文
+    private String sm4MiWen = "";
     private String offSet = "00";
 
     @Override
@@ -90,7 +95,7 @@ public class TestAty extends AppCompatActivity {
             R.id.btn_pri_sign, R.id.btn_pub_verify, R.id.btn_SM2_importSM4Key,
             R.id.btn_SM4_importSM4Key, R.id.btn_importSessionKey_MingWen,
             R.id.btn_importSessionKey_MiWen, R.id.btn_exportSessionKey_MingWen,
-            R.id.btn_exportSessionKey_MiWen,
+            R.id.btn_exportSessionKey_MiWen, R.id.btn_mt2_size, R.id.btn_SM4_Enc, R.id.btn_SM4_Dec
     })
     public void onClick(View view) {
         switch (view.getId()) {
@@ -121,6 +126,16 @@ public class TestAty extends AppCompatActivity {
                 }).start();
 
                 break;
+            case R.id.btn_mt2_size:
+                //获取当前目录剩余空间大小
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        getCardSize("03", "04");
+                    }
+                }).start();
+                break;
+
             case R.id.btn_select_adf:
                 //选择ADF目录
                 new Thread(new Runnable() {
@@ -168,6 +183,7 @@ public class TestAty extends AppCompatActivity {
                         String userInfo = new Gson().toJson(userInfoBean);
                         Log.i(TAG, userInfo);
                         userInfo = Util.getHexString(userInfo.getBytes());
+
                         writeBinary(userInfo);
                     }
                 }).start();
@@ -178,8 +194,8 @@ public class TestAty extends AppCompatActivity {
                     @Override
                     public void run() {
                         createPubKeyFile("0270");
-                        createPubKeyFile("0272");
-                        createPubKeyFile("0274");
+                        //createPubKeyFile("0272");
+                        //createPubKeyFile("0274");
                     }
                 }).start();
                 break;
@@ -188,8 +204,8 @@ public class TestAty extends AppCompatActivity {
                     @Override
                     public void run() {
                         createPriKeyFile("0271");
-                        createPriKeyFile("0273");
-                        createPriKeyFile("0275");
+                        //createPriKeyFile("0273");
+                        //createPriKeyFile("0275");
                     }
                 }).start();
                 break;
@@ -201,7 +217,7 @@ public class TestAty extends AppCompatActivity {
                 sm2Enc("0270", "中午的饭不太好吃,希望厨房能够继续改善@汉王科技******$$$可好啊");
                 break;
             case R.id.btn_SM2_dec:
-                sm2Dec("0271", sm2MiWen,true);
+                sm2Dec("0271", sm2MiWen, true);
                 break;
             case R.id.btn_import_sm2PubKey:
                 importSM2PubKey("0272", tagPubKey);
@@ -240,17 +256,17 @@ public class TestAty extends AppCompatActivity {
                 break;
             case R.id.btn_import_SM4Key:
                 //明文导入对称秘钥
-                importSM4Key((byte) 0x02, (byte) 0x01, "414446312D49544B414446312D49544C");
+                String sm4PubKey = getRandomNumber("32");
+                importSM4Key((byte) 0x02, (byte) 0x01, sm4PubKey);
                 break;
             case R.id.btn_SM2_importSM4Key:
                 //SM2加密导入对称秘钥
                 importSM4KeyWithSM2((byte) 0x05, (byte) 0x02, "02", "", "0202",
-                        "414446312D49544B414446312D49544C");
+                        getRandomNumber("32"));
                 break;
             case R.id.btn_SM4_importSM4Key:
                 //SM4加密导入对称秘钥
-                importSM4KeyWithSM2((byte) 0x00, (byte) 0x03, "02", "", "",
-                        "414446312D49544B414446312D49544C");
+                importSM4KeyWithSM2((byte) 0x00, (byte) 0x03, "02", "", "", getRandomNumber("32"));
                 break;
             case R.id.btn_importSessionKey_MingWen:
                 //明文导入会话ID
@@ -296,8 +312,28 @@ public class TestAty extends AppCompatActivity {
                 exportSessionKeyWithMingW(4, "02");
                 break;
             case R.id.btn_exportSessionKey_MiWen:
+                //秘文导出会话秘钥
                 exportSessionKeyWithMiW((byte) 0x02, (byte) 0x02, (byte) 0x01, (byte) 0x01, "0270");
-                exportSessionKeyWithMiW((byte) 0x03, (byte) 0x02, (byte) 0x01, (byte) 0x01, "0270");
+                exportSessionKeyWithMiW((byte) 0x04, (byte) 0x02, (byte) 0x01, (byte) 0x01, "0270");
+                break;
+            case R.id.btn_SM4_Enc:
+                //SM4加密
+                String tagStr = "你好";
+                String hexString = Util.getHexString(tagStr.getBytes());
+                StringBuilder builder=new StringBuilder(hexString);
+                int remainder=hexString.length()%32;
+                if(remainder!=0){
+                     //需要补0的个数
+                    int i = 32 - remainder;
+                    for(int j=0;j<i;j++){
+                        builder.append("0");
+                    }
+                }
+                sessionEncEcb("00000000", builder.toString());
+                break;
+            case R.id.btn_SM4_Dec:
+                //SM4解密
+                sessionDecEcb("00000000", sm4MiWen);
                 break;
         }
     }
@@ -343,7 +379,16 @@ public class TestAty extends AppCompatActivity {
         }
     }
 
-    //创建ADF文件
+    //创建ADF文件 2字节的文件标识符  18：标识创建的是MF或者DF文件
+
+    /**
+     * ADF1:2字节的文件标识符
+     * 18：一个字节标识文件类型
+     * 020000:3个字节标识文件的大小
+     * F1F1：文件读写权限
+     * FFFFFFFFFFFFFFFF：8个字节RFU
+     * 43534D5478303031：8个字节的文件名
+     */
     private void createADF() {
         String[] adf1 =
                 mSafetyCardMT2.createFile("ADF1", "18020000F1F1FFFFFFFFFFFFFFFF43534D5478303031");
@@ -412,6 +457,14 @@ public class TestAty extends AppCompatActivity {
         }
     }
 
+    //获取卡信息(剩余空间大小)
+    private void getCardSize(String p2, String le) {
+        String[] cardInfo = mSafetyCardMT2.getCardInfo(p2, le);
+        if (SafetyCardMT2.RES_OK.equals(cardInfo[0])) {
+            Log.d(TAG, "卡内剩余空间大小---" + cardInfo[1]);
+        }
+    }
+
     //选择目录
     private void selectFileByFId(String fileId) {
         //选择主控目录
@@ -435,10 +488,24 @@ public class TestAty extends AppCompatActivity {
 
     //创建ADF2文件
     private void createADF2() {
+        //文件大小200字节
         String[] adf1 =
-                mSafetyCardMT2.createFile("ADF2", "18020000F0F0FFFFFFFFFFFFFFFF53534D5478303031");
+                mSafetyCardMT2.createFile("ADF2", "180000c8F0F0FFFFFFFFFFFFFFFF53534D5478303031");
         if (SafetyCardMT2.RES_OK.equals(adf1[0])) {
             Log.d(TAG, "ADF2创建" + adf1[1]);
+            //在ADF2文件下面创建2个二进制文件 只能用180字节
+            String[] ef03 = mSafetyCardMT2.createBinary("EF03", "080064F0F000FF03");
+            if (SafetyCardMT2.RES_OK.equals(ef03[0])) {
+                Log.d(TAG, "二进制文件创建" + ef03[1]);
+            } else {
+                Log.d(TAG, "二进制文件创建" + ef03[0]);
+            }
+            //String[] ef04 = mSafetyCardMT2.createBinary("EF04", "08003dF0F000FF04");
+            //if (SafetyCardMT2.RES_OK.equals(ef04[0])) {
+            //    Log.d(TAG, "二进制文件创建" + ef04[1]);
+            //} else {
+            //    Log.d(TAG, "二进制文件创建" + ef04[0]);
+            //}
         } else {
             Log.d(TAG, "ADF2创建" + adf1[0]);
         }
@@ -482,7 +549,7 @@ public class TestAty extends AppCompatActivity {
         }
     }
 
-    //创建二进制文件
+    //创建二进制文件 08二进制文件的标识  0080文件的大小 F0F0读写权限 00FF01短文件标识符
     private void createBinary() {
         String[] ef01 = mSafetyCardMT2.createBinary("EF01", "080080F0F000FF01");
         if (SafetyCardMT2.RES_OK.equals(ef01[0])) {
@@ -576,11 +643,11 @@ public class TestAty extends AppCompatActivity {
     }
 
     //使用私钥进行解密
-    private void sm2Dec(String priFId, String data,boolean changeHex) {
+    private void sm2Dec(String priFId, String data, boolean changeHex) {
         String[] result = mSafetyCardMT2.SM2PrivateKeyDec(priFId, data);
         if (SafetyCardMT2.RES_OK.equals(result[0])) {
             //SM2解密成功
-            if(!changeHex){
+            if (!changeHex) {
                 Log.d(TAG, "SM2解密数据===" + result[1]);
                 return;
             }
@@ -779,6 +846,18 @@ public class TestAty extends AppCompatActivity {
         }
     }
 
+    //利用随机数生产随机数的长度
+    private String getRandomNumber(String length) {
+        String[] challenge = mSafetyCardMT2.getChallenge(length);
+        if (SafetyCardMT2.RES_OK.equals(challenge[0])) {
+            Log.d(TAG, "对称秘钥生成成功===" + challenge[1]);
+            return challenge[1];
+        } else {
+            Log.d(TAG, "对称秘钥生成失败===" + challenge[0]);
+        }
+        return null;
+    }
+
     /**
      * 使用非对称/对称秘钥加密导入对称秘钥  非对称算法 非对称私钥  对称秘钥算法 对称秘钥文件 对称秘钥值
      *
@@ -871,9 +950,225 @@ public class TestAty extends AppCompatActivity {
         if (SafetyCardMT2.RES_OK.equals(result[0])) {
             Log.d(TAG, "密文导出会话秘钥成功===" + result[1]);
             //进行SM2解密
-            sm2Dec("0271", result[1].substring(4,result[1].length()),false);
+            sm2Dec("0271", result[1].substring(4, result[1].length()), false);
         } else {
             Log.d(TAG, "密文导出会话秘钥失败===" + result[0]);
+        }
+    }
+
+    /**
+     * SM4 ECB模式加密
+     *
+     * @param sessionId 存放会话秘钥的文件Id
+     * @param inData 待加密的数据
+     */
+    private void sessionEncEcb(String sessionId, String inData) {
+        byte[] bytes = Util.hexStringToBytes(inData);
+        Log.i(TAG, "摘要的字节数====" + bytes.length);
+        if (bytes.length <= 240) {
+            String[] result = mSafetyCardMT2.sessionKeyEncECB("00", sessionId, inData);
+            if (SafetyCardMT2.RES_OK.equals(result[0])) {
+                //加密SM4数据成功
+                sm4MiWen = result[1];
+                Log.d(TAG, "获取SM4加密数据成功===" + result[1]);
+            } else {
+                Log.d(TAG, "获取SM4加密数据失败===" + result[0]);
+            }
+            return;
+        }
+        if (bytes.length <= 480) {
+            //分成首块和尾块发送
+            String headData = inData.substring(0, inData.length() / 2);
+            String endData = inData.substring(inData.length() / 2, inData.length());
+            String[] headResult = mSafetyCardMT2.sessionKeyEncECB("01", sessionId, headData);
+            if (SafetyCardMT2.RES_OK.equals(headResult[0])) {
+                //首块发送成功 继续发送尾块
+                String[] endResult = mSafetyCardMT2.sessionKeyEncECB("03", sessionId, endData);
+                if (SafetyCardMT2.RES_OK.equals(endResult[0])) {
+                    //获取摘要数据成功
+                    sm4MiWen = endResult[1];
+                    Log.d(TAG, "获取SM4加密数据成功===" + endResult[1]);
+                } else {
+                    Log.d(TAG, "获取SM4加密数据成功===" + endResult[0]);
+                }
+            } else {
+                Log.d(TAG, "首块数据发送失败===" + headResult[0]);
+            }
+            return;
+        }
+        if (bytes.length <= 720) {
+            //分成首块、中间块和尾块发送
+            String headData = inData.substring(0, inData.length() / 3);
+            String midData = inData.substring(inData.length() / 3,
+                    inData.length() - inData.length() / 3 - 1);
+            String endData =
+                    inData.substring(inData.length() - inData.length() / 3 - 1, inData.length());
+
+            String[] headResult = mSafetyCardMT2.sessionKeyEncECB("01", sessionId, headData);
+            if (SafetyCardMT2.RES_OK.equals(headResult[0])) {
+                //首块发送成功 继续发送中间块
+                String[] midResult = mSafetyCardMT2.sessionKeyEncECB("02", sessionId, midData);
+                if (SafetyCardMT2.RES_OK.equals(midResult[0])) {
+                    //中间块发送成功 继续发送尾块
+                    String[] endResult = mSafetyCardMT2.sessionKeyEncECB("03", sessionId, endData);
+                    if (SafetyCardMT2.RES_OK.equals(endResult[0])) {
+                        //获取秘文数据成功
+                        sm4MiWen = endResult[1];
+                        Log.d(TAG, "获取SM4加密数据成功===" + endResult[1]);
+                    } else {
+                        Log.d(TAG, "获取SM4加密数据失败===" + endResult[0]);
+                    }
+                } else {
+                    Log.d(TAG, "中间块数据发送失败===" + midResult[0]);
+                }
+            } else {
+                Log.d(TAG, "首块数据发送失败===" + headResult[0]);
+            }
+            return;
+        }
+        //分成首块、中间块和尾块发送
+        String headData = inData.substring(0, 240);
+        //发送首块数据
+        String[] headResult = mSafetyCardMT2.sessionKeyEncECB("01", sessionId, headData);
+        if (SafetyCardMT2.RES_OK.equals(headResult[0])) {
+            //首块数据发送成功
+            String midData = inData.substring(240, inData.length() - 240);
+            while (midData.length() > 240) {
+                //拆分中间块数据
+                String[] midResult =
+                        mSafetyCardMT2.sessionKeyEncECB("02", sessionId, inData.substring(0, 240));
+                if (SafetyCardMT2.RES_OK.equals(midResult[0])) {
+                    midData = midData.substring(240, midData.length());
+                }
+            }
+            //发送最后一块中间数据
+            String[] midResult = mSafetyCardMT2.sessionKeyEncECB("02", sessionId,
+                    inData.substring(0, midData.length()));
+            if (SafetyCardMT2.RES_OK.equals(midResult[0])) {
+                String endData = inData.substring(inData.length() - 240, inData.length());
+                String[] endResult = mSafetyCardMT2.sessionKeyEncECB("03", sessionId, endData);
+                if (SafetyCardMT2.RES_OK.equals(endResult[0])) {
+                    //获取秘文数据成功
+                    sm4MiWen = endResult[1];
+                    Log.d(TAG, "获取SM4加密数据成功===" + endResult[1]);
+                } else {
+                    Log.d(TAG, "获取SM4加密数据失败===" + endResult[0]);
+                }
+            } else {
+                Log.d(TAG, "中间块数据发送失败===" + midResult[0]);
+            }
+        } else {
+            Log.d(TAG, "首块数据发送失败===" + headResult[0]);
+        }
+    }
+
+    //
+
+    /**
+     * SM4 ECB模式解密
+     *
+     * @param sessionId 存放会话秘钥的文件Id
+     * @param inData 待加密的数据
+     */
+    private void sessionDecEcb(String sessionId, String inData) {
+        byte[] bytes = Util.hexStringToBytes(inData);
+        Log.i(TAG, "解密的字节数====" + bytes.length);
+        if (bytes.length <= 240) {
+            String[] result = mSafetyCardMT2.sessionKeyDecECB("00", sessionId, inData);
+            if (SafetyCardMT2.RES_OK.equals(result[0])) {
+                //解密SM4数据成功
+             String str=new String(Util.hexStringToBytes(result[1])) ;
+                Log.d(TAG, "获取SM4解密数据成功===" + str);
+                sm4MiWen = result[1];
+                Log.d(TAG, "获取SM4解密数据成功===" + result[1]);
+            } else {
+                Log.d(TAG, "获取SM4解密数据失败===" + result[0]);
+            }
+            return;
+        }
+        if (bytes.length <= 480) {
+            //分成首块和尾块发送
+            String headData = inData.substring(0, inData.length() / 2);
+            String endData = inData.substring(inData.length() / 2, inData.length());
+            String[] headResult = mSafetyCardMT2.sessionKeyDecECB("01", sessionId, headData);
+            if (SafetyCardMT2.RES_OK.equals(headResult[0])) {
+                //首块发送成功 继续发送尾块
+                String[] endResult = mSafetyCardMT2.sessionKeyDecECB("03", sessionId, endData);
+                if (SafetyCardMT2.RES_OK.equals(endResult[0])) {
+                    //获取摘要数据成功
+                    sm4MiWen = endResult[1];
+                    Log.d(TAG, "获取SM4解密数据成功===" + endResult[1]);
+                } else {
+                    Log.d(TAG, "获取SM4解密数据成功===" + endResult[0]);
+                }
+            } else {
+                Log.d(TAG, "首块数据发送失败===" + headResult[0]);
+            }
+            return;
+        }
+        if (bytes.length <= 720) {
+            //分成首块、中间块和尾块发送
+            String headData = inData.substring(0, inData.length() / 3);
+            String midData = inData.substring(inData.length() / 3,
+                    inData.length() - inData.length() / 3 - 1);
+            String endData =
+                    inData.substring(inData.length() - inData.length() / 3 - 1, inData.length());
+
+            String[] headResult = mSafetyCardMT2.sessionKeyDecECB("01", sessionId, headData);
+            if (SafetyCardMT2.RES_OK.equals(headResult[0])) {
+                //首块发送成功 继续发送中间块
+                String[] midResult = mSafetyCardMT2.sessionKeyDecECB("02", sessionId, midData);
+                if (SafetyCardMT2.RES_OK.equals(midResult[0])) {
+                    //中间块发送成功 继续发送尾块
+                    String[] endResult = mSafetyCardMT2.sessionKeyDecECB("03", sessionId, endData);
+                    if (SafetyCardMT2.RES_OK.equals(endResult[0])) {
+                        //获取秘文数据成功
+                        sm4MiWen = endResult[1];
+                        Log.d(TAG, "获取SM4解密数据成功===" + endResult[1]);
+                    } else {
+                        Log.d(TAG, "获取SM4解密数据失败===" + endResult[0]);
+                    }
+                } else {
+                    Log.d(TAG, "中间块数据发送失败===" + midResult[0]);
+                }
+            } else {
+                Log.d(TAG, "首块数据发送失败===" + headResult[0]);
+            }
+            return;
+        }
+        //分成首块、中间块和尾块发送
+        String headData = inData.substring(0, 240);
+        //发送首块数据
+        String[] headResult = mSafetyCardMT2.sessionKeyDecECB("01", sessionId, headData);
+        if (SafetyCardMT2.RES_OK.equals(headResult[0])) {
+            //首块数据发送成功
+            String midData = inData.substring(240, inData.length() - 240);
+            while (midData.length() > 240) {
+                //拆分中间块数据
+                String[] midResult =
+                        mSafetyCardMT2.sessionKeyDecECB("02", sessionId, inData.substring(0, 240));
+                if (SafetyCardMT2.RES_OK.equals(midResult[0])) {
+                    midData = midData.substring(240, midData.length());
+                }
+            }
+            //发送最后一块中间数据
+            String[] midResult = mSafetyCardMT2.sessionKeyDecECB("02", sessionId,
+                    inData.substring(0, midData.length()));
+            if (SafetyCardMT2.RES_OK.equals(midResult[0])) {
+                String endData = inData.substring(inData.length() - 240, inData.length());
+                String[] endResult = mSafetyCardMT2.sessionKeyDecECB("03", sessionId, endData);
+                if (SafetyCardMT2.RES_OK.equals(endResult[0])) {
+                    //获取秘文数据成功
+                    sm4MiWen = endResult[1];
+                    Log.d(TAG, "获取SM4解密数据成功===" + endResult[1]);
+                } else {
+                    Log.d(TAG, "获取SM4解密数据失败===" + endResult[0]);
+                }
+            } else {
+                Log.d(TAG, "中间块数据发送失败===" + midResult[0]);
+            }
+        } else {
+            Log.d(TAG, "首块数据发送失败===" + headResult[0]);
         }
     }
 

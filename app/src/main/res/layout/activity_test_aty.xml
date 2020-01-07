@@ -39,7 +39,12 @@
             android:layout_height="match_parent"
             android:text="选择MF目录"
             />
-
+        <Button
+            android:id="@+id/btn_mt2_size"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:text="剩余空间"
+            />
       </LinearLayout>
       <LinearLayout
           android:layout_width="match_parent"
@@ -277,6 +282,24 @@
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:text="密文导出会话秘钥"
+            />
+      </LinearLayout>
+      <LinearLayout
+          android:layout_width="match_parent"
+          android:layout_height="50dp"
+          android:orientation="horizontal"
+          >
+        <Button
+            android:id="@+id/btn_SM4_Enc"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:text="SM4加密"
+            />
+        <Button
+            android:id="@+id/btn_SM4_Dec"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:text="SM4解密"
             />
       </LinearLayout>
     </LinearLayout>
