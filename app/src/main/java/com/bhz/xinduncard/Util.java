@@ -301,4 +301,11 @@ public class Util {
         }
         return str;
     }
+
+
+    public static int decodeHEX(String hexs){
+        BigInteger bigint=new BigInteger(hexs, 16);
+        return bigint.intValue();
+    }
+
 }

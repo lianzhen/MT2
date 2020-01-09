@@ -3131,9 +3131,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                 final String data =
                         "112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF00";
-
                 String[] rec = mSafetyCardMT2.sessionKeyEncECB("01", "00000000", data);
-
                 dataC = rec[1];
                 for (int i = 0; i < 300; i++) {
                     String[] rec2 = mSafetyCardMT2.sessionKeyEncECB("02", "00000000", data);
@@ -3143,11 +3141,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         dataC = dataC + rec2[1];
                     }
                 }
-
                 String[] rec1 = mSafetyCardMT2.sessionKeyEncECB("03", "00000000", data);
-
                 dataC = dataC + rec1[1];
-
                 endTime();
                 zLogAppend("dataC:" + dataC.length());
             }

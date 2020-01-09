@@ -140,7 +140,7 @@ public class TestAty extends AppCompatActivity {
                 new Thread(new Runnable() {
                     @Override
                     public void run() {
-                        getCardSize("03", "04");
+                         getCardSize("03", "04");
                     }
                 }).start();
                 break;
@@ -279,7 +279,7 @@ public class TestAty extends AppCompatActivity {
                 break;
             case R.id.btn_importSessionKey_MingWen:
                 //明文导入会话ID
-                importSessionKeyMingW(1, "02", "10112233445566778899AABBCCDDEEFF");
+                importSessionKeyMingW(1, "02", "e74fc0278d13c72eb1d7aa012e84d5b8");
                 importSessionKeyMingW(2, "02", "20112233445566778899AABBCCDDEEFF");
                 importSessionKeyMingW(3, "02", "30112233445566778899AABBCCDDEEFF");
                 importSessionKeyMingW(4, "02", "40112233445566778899AABBCCDDEEFF");
@@ -327,9 +327,13 @@ public class TestAty extends AppCompatActivity {
                 break;
             case R.id.btn_SM4_Enc:
                 //SM4加密
-                String tagStr = "你好,hello word!,数据库里东方时空的方式开发胜多负少个开始的覅所数据库里东方时空的方式开发胜多负少个开始的覅所以符合肯定是开发绝对是副科级好丹非数据库里东方时空的方式开发胜多负少个开始的覅所以符合肯定是开发绝对是副科级好丹非素红薯粉丝就好地方惊世毒妃和快递费就好地方房贷峰素红薯粉丝就好地方惊世毒妃和快递费就好地方房贷峰以符合肯定是开发绝对是副科级好丹非素红薯粉丝就好地方惊世毒妃和快递费就好地方房贷峰数据库里东方时空的方式开发胜多负少个开始的覅所以符合肯定是开发绝对是副科级好丹非素红薯粉丝就好地方惊世毒妃和快递费就好地方房贷峰数据库里东方时空的方式开发胜多负少个开始的覅所以符合肯定是开发绝对是副科级好丹非素红薯粉丝就好地方惊世毒妃和快递费就好地方房贷峰";
+                String tagStr =
+                        "你好,hello word!,数据库里东方时空的方式开发胜多负少个开始的覅所数据库里东方时空的方式开发胜多负少个开始的覅所以符合肯定是开发绝对是副科级好丹非数据库里东方时空的方式开发胜多负少个开始的覅所以符合肯定是开发绝对是副科级好丹非素红薯粉丝就好地方惊世毒妃和快递费就好地方房贷峰素红薯粉丝就好地方惊世毒妃和快递费就好地方房贷峰以符合肯定是开发绝对是副科级好丹非素红薯粉丝就好地方惊世毒妃和快递费就好地方房贷峰数据库里东方时空的方式开发胜多负少个开始的覅所以符合肯定是开发绝对是副科级好丹非素红薯粉丝就好地方惊世毒妃和快递费就好地方房贷峰数据库里东方时空的方式开发胜多负少个开始的覅所以符合肯定是开发绝对是副科级好丹非素红薯粉丝就好地方惊世毒妃和快递费就好地方房贷峰";
+                // String tagStr = "你好,hello word!";
+                //String tagStr =
+                //        "你好,hello word!,数据库里东方时空的方式开发胜多负少个开始的覅所数据库里东方时空的方式开发胜多负少个开始的覅所以符合肯定是开发绝对是副科级好丹非数据库里东方时空的方式开发胜多负少个开始的覅所以符合肯定是开发绝对是副科级好丹非素红薯粉丝就好地方惊世毒妃和快递费就好地方房贷峰素红薯粉丝就好地方惊世毒妃和快递费就好地方房贷峰以符合";
                 sb = MT2Util.sessionEncEcb(mSafetyCardMT2, "00000000", tagStr.getBytes());
-
+                Log.d(TAG, Util.getHexString(sb));
 
                 //  sessionEncEcb("00000000", Util.getHexString(bytes));
 
@@ -348,8 +352,9 @@ public class TestAty extends AppCompatActivity {
             case R.id.btn_SM4_Dec:
                 //SM4解密
                 //  sessionDecEcb("00000000", sm4MiWen);
+                //  String str="684950BDA416CB72F825B81062069916";
                 byte[] bytes1 = MT2Util.sessionDecEcb(mSafetyCardMT2, "00000000", sb);
-                Log.i(TAG,new String(bytes1));
+                Log.i(TAG, new String(bytes1));
                 break;
             case R.id.btn_PIN_authenticate:
                 //验证PIN
@@ -490,7 +495,6 @@ public class TestAty extends AppCompatActivity {
 
     //选择目录
     private void selectFileByFId(String fileId) {
-        //选择主控目录
         String[] result14 = mSafetyCardMT2.selectFile("00", fileId);
         if (result14[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result14[0])) {
             //进行MF文件外部认证
