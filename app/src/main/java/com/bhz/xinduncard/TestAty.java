@@ -19,6 +19,7 @@ import com.google.gson.Gson;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
+import mt2.MT2Util;
 
 public class TestAty extends AppCompatActivity {
     @BindView(R.id.btn_create_mf) Button btnCreateMf;
@@ -53,8 +54,10 @@ public class TestAty extends AppCompatActivity {
     @BindView(R.id.btn_mt2_size) Button btnMt2Size;
     @BindView(R.id.btn_SM4_Enc) Button btnSM4Enc;
     @BindView(R.id.btn_SM4_Dec) Button btnSM4Dec;
+    @BindView(R.id.btn_PIN_authenticate) Button btnPINAuthenticate;
+    @BindView(R.id.btn_PIN_change) Button btnPINChange;
     private SafetyCardMT2 mSafetyCardMT2;
-    private String TAG = "TestAty";
+    private String TAG = "MT2Util";
     //导出的公钥值
     private String tagPubKey = "";
     //SM2加密后的秘文
@@ -66,6 +69,7 @@ public class TestAty extends AppCompatActivity {
     //SM4加密后的秘文
     private String sm4MiWen = "";
     private String offSet = "00";
+    private byte[] sb;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,6 +84,10 @@ public class TestAty extends AppCompatActivity {
                 return;
             }
         }
+
+        String str = new String(Util.hexStringToBytes("313233343536"));
+        Log.i("pppppppp", str);
+
         mSafetyCardMT2 = new SafetyCardMT2(this);
         openChannel();
         mSafetyCardMT2.setPrintLog(true);
@@ -95,7 +103,8 @@ public class TestAty extends AppCompatActivity {
             R.id.btn_pri_sign, R.id.btn_pub_verify, R.id.btn_SM2_importSM4Key,
             R.id.btn_SM4_importSM4Key, R.id.btn_importSessionKey_MingWen,
             R.id.btn_importSessionKey_MiWen, R.id.btn_exportSessionKey_MingWen,
-            R.id.btn_exportSessionKey_MiWen, R.id.btn_mt2_size, R.id.btn_SM4_Enc, R.id.btn_SM4_Dec
+            R.id.btn_exportSessionKey_MiWen, R.id.btn_mt2_size, R.id.btn_SM4_Enc, R.id.btn_SM4_Dec,
+            R.id.btn_PIN_authenticate, R.id.btn_PIN_change
     })
     public void onClick(View view) {
         switch (view.getId()) {
@@ -256,17 +265,17 @@ public class TestAty extends AppCompatActivity {
                 break;
             case R.id.btn_import_SM4Key:
                 //明文导入对称秘钥
-                String sm4PubKey = getRandomNumber("32");
+                String sm4PubKey = getRandomNumber("10");
                 importSM4Key((byte) 0x02, (byte) 0x01, sm4PubKey);
                 break;
             case R.id.btn_SM2_importSM4Key:
                 //SM2加密导入对称秘钥
                 importSM4KeyWithSM2((byte) 0x05, (byte) 0x02, "02", "", "0202",
-                        getRandomNumber("32"));
+                        getRandomNumber("10"));
                 break;
             case R.id.btn_SM4_importSM4Key:
                 //SM4加密导入对称秘钥
-                importSM4KeyWithSM2((byte) 0x00, (byte) 0x03, "02", "", "", getRandomNumber("32"));
+                importSM4KeyWithSM2((byte) 0x00, (byte) 0x03, "02", "", "", getRandomNumber("10"));
                 break;
             case R.id.btn_importSessionKey_MingWen:
                 //明文导入会话ID
@@ -318,22 +327,36 @@ public class TestAty extends AppCompatActivity {
                 break;
             case R.id.btn_SM4_Enc:
                 //SM4加密
-                String tagStr = "你好";
-                String hexString = Util.getHexString(tagStr.getBytes());
-                StringBuilder builder=new StringBuilder(hexString);
-                int remainder=hexString.length()%32;
-                if(remainder!=0){
-                     //需要补0的个数
-                    int i = 32 - remainder;
-                    for(int j=0;j<i;j++){
-                        builder.append("0");
-                    }
-                }
-                sessionEncEcb("00000000", builder.toString());
+                String tagStr = "你好,hello word!,数据库里东方时空的方式开发胜多负少个开始的覅所数据库里东方时空的方式开发胜多负少个开始的覅所以符合肯定是开发绝对是副科级好丹非数据库里东方时空的方式开发胜多负少个开始的覅所以符合肯定是开发绝对是副科级好丹非素红薯粉丝就好地方惊世毒妃和快递费就好地方房贷峰素红薯粉丝就好地方惊世毒妃和快递费就好地方房贷峰以符合肯定是开发绝对是副科级好丹非素红薯粉丝就好地方惊世毒妃和快递费就好地方房贷峰数据库里东方时空的方式开发胜多负少个开始的覅所以符合肯定是开发绝对是副科级好丹非素红薯粉丝就好地方惊世毒妃和快递费就好地方房贷峰数据库里东方时空的方式开发胜多负少个开始的覅所以符合肯定是开发绝对是副科级好丹非素红薯粉丝就好地方惊世毒妃和快递费就好地方房贷峰";
+                sb = MT2Util.sessionEncEcb(mSafetyCardMT2, "00000000", tagStr.getBytes());
+
+
+                //  sessionEncEcb("00000000", Util.getHexString(bytes));
+
+                //String hexString = Util.getHexString(tagStr.getBytes());
+                //StringBuilder builder = new StringBuilder(hexString);
+                //int remainder = hexString.length() % 32;
+                //if (remainder != 0) {
+                //    //需要补0的个数
+                //    int i = 32 - remainder;
+                //    for (int j = 0; j < i; j++) {
+                //        builder.append("0");
+                //    }
+                //}
+                //sessionEncEcb("00000000", builder.toString());
                 break;
             case R.id.btn_SM4_Dec:
                 //SM4解密
-                sessionDecEcb("00000000", sm4MiWen);
+                //  sessionDecEcb("00000000", sm4MiWen);
+                byte[] bytes1 = MT2Util.sessionDecEcb(mSafetyCardMT2, "00000000", sb);
+                Log.i(TAG,new String(bytes1));
+                break;
+            case R.id.btn_PIN_authenticate:
+                //验证PIN
+                pinVerify("313233343537");
+                break;
+            case R.id.btn_PIN_change:
+                changePIN("313233343536", "313233343537");
                 break;
         }
     }
@@ -478,8 +501,6 @@ public class TestAty extends AppCompatActivity {
                 //ADF1文件的外部认证
                 Log.d(TAG, "选择ADF1目录成功" + result14[1]);
                 externalAuth("414446312D45544B414446312D45544B");
-                //验证PIN
-                pinVerify("313233343536");
             }
         } else {
             Log.d(TAG, "选择指定目录失败" + result14[1]);
@@ -549,6 +570,16 @@ public class TestAty extends AppCompatActivity {
         }
     }
 
+    //修改PIN
+    private void changePIN(String oldPin, String newPin) {
+        String[] result = mSafetyCardMT2.changePIN(oldPin, newPin);
+        if (SafetyCardMT2.RES_OK.equals(result[0])) {
+            Log.d(TAG, "PIN修改成功" + result[1]);
+        } else {
+            Log.d(TAG, "PIN修改失败" + result[0]);
+        }
+    }
+
     //创建二进制文件 08二进制文件的标识  0080文件的大小 F0F0读写权限 00FF01短文件标识符
     private void createBinary() {
         String[] ef01 = mSafetyCardMT2.createBinary("EF01", "080080F0F000FF01");
@@ -563,9 +594,6 @@ public class TestAty extends AppCompatActivity {
     private void writeBinary(String data) {
         //先读取二进制文件里面的内容
         String oldData = readBinary();
-        if ("".equals(oldData) || oldData == null) {
-            return;
-        }
         UserInfoBean userInfoBean = new Gson().fromJson(oldData, UserInfoBean.class);
         //然后开始写数据
         String[] result = mSafetyCardMT2.updateBinary(1, "00", data, false);
@@ -857,6 +885,7 @@ public class TestAty extends AppCompatActivity {
         }
         return null;
     }
+    //利用这个随机数作为SM4的对称秘钥
 
     /**
      * 使用非对称/对称秘钥加密导入对称秘钥  非对称算法 非对称私钥  对称秘钥算法 对称秘钥文件 对称秘钥值
@@ -1068,7 +1097,7 @@ public class TestAty extends AppCompatActivity {
      * SM4 ECB模式解密
      *
      * @param sessionId 存放会话秘钥的文件Id
-     * @param inData 待加密的数据
+     * @param inData 待解密的数据
      */
     private void sessionDecEcb(String sessionId, String inData) {
         byte[] bytes = Util.hexStringToBytes(inData);
@@ -1077,7 +1106,9 @@ public class TestAty extends AppCompatActivity {
             String[] result = mSafetyCardMT2.sessionKeyDecECB("00", sessionId, inData);
             if (SafetyCardMT2.RES_OK.equals(result[0])) {
                 //解密SM4数据成功
-             String str=new String(Util.hexStringToBytes(result[1])) ;
+                byte[] b = Util.hexStringToBytes(result[1]);
+                byte[] bytes1 = SM4Helper.dataRestore(b);
+                String str = new String(bytes1);
                 Log.d(TAG, "获取SM4解密数据成功===" + str);
                 sm4MiWen = result[1];
                 Log.d(TAG, "获取SM4解密数据成功===" + result[1]);
