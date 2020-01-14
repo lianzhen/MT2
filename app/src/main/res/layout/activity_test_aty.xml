@@ -320,6 +320,48 @@
             android:text="ADF1文件PIN修改"
             />
       </LinearLayout>
+      <LinearLayout
+          android:layout_width="match_parent"
+          android:layout_height="50dp"
+          android:orientation="horizontal"
+          >
+        <Button
+            android:id="@+id/btn_RSA_pubKeyFile"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:text="RSA公钥文件"
+            />
+        <Button
+            android:id="@+id/btn_RSA_priKeyFile"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:text="RSA私钥文件"
+            />
+        <Button
+            android:id="@+id/btn_RSA_PeiDui"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:text="配对RSA"
+            />
+      </LinearLayout>
+      <LinearLayout
+          android:layout_width="match_parent"
+          android:layout_height="50dp"
+          android:orientation="horizontal"
+          >
+        <Button
+            android:id="@+id/btn_RSA_Enc"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:text="RSA加密"
+            />
+        <Button
+            android:id="@+id/btn_RSA_Dec"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:text="RSA解密"
+            />
+      </LinearLayout>
     </LinearLayout>
   </ScrollView>
 </LinearLayout>

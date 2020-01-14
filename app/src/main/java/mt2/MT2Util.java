@@ -217,25 +217,25 @@ public class MT2Util {
             return null;
         }
         //分成首块、中间块和尾块发送
-        String headData = inData.substring(0, 240);
+        String headData = inData.substring(0, 480);
         //发送首块数据
         String[] headResult = mSafetyCardMT2.digestCal("00", hashType, headData);
         if (SafetyCardMT2.RES_OK.equals(headResult[0])) {
             //首块数据发送成功
-            String midData = inData.substring(240, inData.length() - 240);
-            while (midData.length() > 240) {
+            String midData = inData.substring(480, inData.length() - 480);
+            while (midData.length() > 480) {
                 //拆分中间块数据
                 String[] midResult =
-                        mSafetyCardMT2.digestCal("02", hashType, midData.substring(0, 240));
+                        mSafetyCardMT2.digestCal("02", hashType, midData.substring(0, 480));
                 if (SafetyCardMT2.RES_OK.equals(midResult[0])) {
-                    midData = midData.substring(240, midData.length());
+                    midData = midData.substring(480, midData.length());
                 }
             }
             //发送最后一块中间数据
             String[] midResult =
                     mSafetyCardMT2.digestCal("02", hashType, inData.substring(0, midData.length()));
             if (SafetyCardMT2.RES_OK.equals(midResult[0])) {
-                String endData = inData.substring(inData.length() - 240, inData.length());
+                String endData = inData.substring(inData.length() - 480, inData.length());
                 String[] endResult = mSafetyCardMT2.digestCal("03", hashType, endData);
                 if (SafetyCardMT2.RES_OK.equals(endResult[0])) {
                     //获取摘要数据成功
@@ -678,6 +678,7 @@ public class MT2Util {
         }
         return false;
     }
+
     //删除MF
     public static boolean deleteMF(SafetyCardMT2 mSafetyCardMT2) {
         String[] delMF = mSafetyCardMT2.delMF();
@@ -689,6 +690,7 @@ public class MT2Util {
         }
         return false;
     }
+
     //创建MF的key文件
     public static void createMFKey(SafetyCardMT2 mSafetyCardMT2) {
         String[] key = mSafetyCardMT2.createKey();
@@ -696,17 +698,22 @@ public class MT2Util {
             Log.d(TAG, "创建MF_Key文件" + key[1]);
             //装载Key值
             //1.装载主控秘钥控制MF下文件的建立和密钥的写入
-            writeKey(mSafetyCardMT2,"00", "01", "F0110401FF436F7265536869656C6453414D434F53", true);
+            writeKey(mSafetyCardMT2, "00", "01", "F0110401FF436F7265536869656C6453414D434F53",
+                    true);
             //系统维护秘钥
-            writeKey(mSafetyCardMT2,"01", "01", "F02104FFFF44414D4B44414D4B44414D4B44414D4B", true);
+            writeKey(mSafetyCardMT2, "01", "01", "F02104FFFF44414D4B44414D4B44414D4B44414D4B",
+                    true);
             //外部认证的key
-            writeKey(mSafetyCardMT2,"02", "01", "F0110401FF414446312D45544B414446312D45544B", true);
+            writeKey(mSafetyCardMT2, "02", "01", "F0110401FF414446312D45544B414446312D45544B",
+                    true);
             //PIN认证的key
-            writeKey(mSafetyCardMT2,"0A", "01", "F021FF02FF313233343536FFFFFFFFFFFFFFFFFFFF", true);
+            writeKey(mSafetyCardMT2, "0A", "01", "F021FF02FF313233343536FFFFFFFFFFFFFFFFFFFF",
+                    true);
         } else {
             Log.d(TAG, "创建Key" + key[0]);
         }
     }
+
     //创建ADF的key文件
     public static void createADFKey(SafetyCardMT2 mSafetyCardMT2) {
         String[] key = mSafetyCardMT2.createFile("0000", "1F10FFFFFFFFFFFF");
@@ -714,17 +721,22 @@ public class MT2Util {
             Log.d(TAG, "创建ADF_Key文件" + key[1]);
             //装载Key值
             //主控秘钥-控制DF下文件的建立和秘钥的写入
-            writeKey(mSafetyCardMT2,"00", "01", "F0110401FF436F7265536869656C644D5478303031", true);
+            writeKey(mSafetyCardMT2, "00", "01", "F0110401FF436F7265536869656C644D5478303031",
+                    true);
             //维护秘钥key
-            writeKey(mSafetyCardMT2,"01", "01", "F02104FFFF4144463144414D4B4144463144414D4B", true);
+            writeKey(mSafetyCardMT2, "01", "01", "F02104FFFF4144463144414D4B4144463144414D4B",
+                    true);
             //外部认证秘钥key
-            writeKey(mSafetyCardMT2,"02", "01", "F01104FFFF414446312D45544B414446312D45544B", true);
+            writeKey(mSafetyCardMT2, "02", "01", "F01104FFFF414446312D45544B414446312D45544B",
+                    true);
             //PIN认证key
-            writeKey(mSafetyCardMT2,"0A", "01", "F021FF02FF313233343536FFFFFFFFFFFFFFFFFFFF", true);
+            writeKey(mSafetyCardMT2, "0A", "01", "F021FF02FF313233343536FFFFFFFFFFFFFFFFFFFF",
+                    true);
         } else {
             Log.d(TAG, "创建Key" + key[0]);
         }
     }
+
     /**
      * 装载或者更新key值
      *
@@ -740,9 +752,11 @@ public class MT2Util {
      * @param keyId 01：SM4   02:3DES
      * @param isPlain true:明文装载  false：秘文装载
      */
-    private static void writeKey(SafetyCardMT2 mSafetyCardMT2,String keyType, String keyId, String data, boolean isPlain) {
+    private static void writeKey(SafetyCardMT2 mSafetyCardMT2, String keyType, String keyId,
+            String data, boolean isPlain) {
         mSafetyCardMT2.writeKey(keyType, keyId, data, isPlain);
     }
+
     //创建ADF文件
     public static void createADF(SafetyCardMT2 mSafetyCardMT2) {
         //200K大小
@@ -756,12 +770,13 @@ public class MT2Util {
             Log.d(TAG, "ADF1创建" + adf1[0]);
         }
     }
+
     /**
      * 选择文件目录
      *
      * @param fileId 文件标识符
      */
-    private void selectFileByFId(SafetyCardMT2 mSafetyCardMT2, String fileId) {
+    public static void selectFileByFId(SafetyCardMT2 mSafetyCardMT2, String fileId) {
         String[] result14 = mSafetyCardMT2.selectFile("00", fileId);
         if (result14[0] != null && SafetyCardMT2.RES_OK.equalsIgnoreCase(result14[0])) {
             //进行MF文件外部认证
@@ -777,4 +792,315 @@ public class MT2Util {
             Log.d(TAG, "选择指定目录失败" + result14[1]);
         }
     }
+    //=====================================================================
+
+    /**
+     * 创建RSA公钥文件
+     *
+     * @param fileId 公钥文件ID
+     * @param modLen 模长 1024:0400 ，1280:0500，2048:0800
+     */
+    public static boolean createRSAPubKeyFile(SafetyCardMT2 mSafetyCardMT2, String fileId,
+            String modLen) {
+        String[] rsaPubkeyFile = mSafetyCardMT2.createRSAPubkeyFile(fileId, modLen);
+        if (SafetyCardMT2.RES_OK.equals(rsaPubkeyFile[0])) {
+            Log.d(TAG, "RSA公钥文件创建成功" + rsaPubkeyFile[1]);
+            return true;
+        } else {
+            Log.d(TAG, "RSA公钥文件创建失败" + rsaPubkeyFile[0]);
+        }
+        return false;
+    }
+
+    /**
+     * 创建RSA私钥文件
+     *
+     * @param fileId 私钥文件ID
+     * @param modLen 模长 1024:0400 ，1280:0500，2048:0800
+     */
+    public static boolean createRSAPriKeyFile(SafetyCardMT2 mSafetyCardMT2, String fileId,
+            String modLen) {
+        String[] rsaPubkeyFile = mSafetyCardMT2.createRSAPrikeyFile(fileId, modLen);
+        if (SafetyCardMT2.RES_OK.equals(rsaPubkeyFile[0])) {
+            Log.d(TAG, "RSA私钥文件创建成功" + rsaPubkeyFile[1]);
+            return true;
+        } else {
+            Log.d(TAG, "RSA私钥文件创建失败" + rsaPubkeyFile[0]);
+        }
+        return false;
+    }
+
+    /**
+     * 配对RSA公私钥 并是否导出RSA公钥值
+     *
+     * @param type RSA类型：00:RSA1024，01:RSA1280，02:RSA2048
+     * @param exportPubkeyFlag 是否导出公钥：‘00’：不导出公钥，01’：同时导出公钥
+     * @param pubkeyFileId 公钥文件的ID
+     * @param prikeyFileId 私钥文件的ID
+     */
+    public static String pairRSA(SafetyCardMT2 mSafetyCardMT2, String type, String exportPubkeyFlag,
+            String pubkeyFileId, String prikeyFileId) {
+
+        String[] result =
+                mSafetyCardMT2.generateRSAKey(type, exportPubkeyFlag, pubkeyFileId, prikeyFileId);
+        if (SafetyCardMT2.RES_OK.equals(result[0])) {
+            Log.d(TAG, "RSA公钥配对成功" + result[1]);
+            if ("00".equals(exportPubkeyFlag)) {
+                //不导出
+                return "00";
+            }
+            if ("01".equals(exportPubkeyFlag)) {
+                //导出公钥
+                return result[1];
+            }
+        } else {
+            Log.d(TAG, "RSA公钥配对失败" + result[0]);
+        }
+        return null;
+    }
+
+    /**
+     * 导出指定的公钥文件
+     *
+     * @param pubkeyFileId 公钥文件的ID
+     * @param pubkeyType 公钥类型 SM2 : 02，RSA1024 : 00，RSA1280 : 01，RSA2048 : 03
+     * @param hashType 哈希类型：hash算法必须要和公钥的算法属性 SM2—SM3:00，RSA1024—SHA-1:01，RSA1280—SHA-1:01，
+     * RSA2048——SHA256 :02
+     */
+    public static String exportPublicKey(SafetyCardMT2 mSafetyCardMT2, String pubkeyFileId,
+            String pubkeyType, String hashType) {
+        String[] result = mSafetyCardMT2.exportPublicKey(pubkeyFileId, pubkeyType, hashType);
+        if (SafetyCardMT2.RES_OK.equals(result[0])) {
+            Log.d(TAG, "公钥导出成功" + result[1]);
+            return result[1];
+        } else {
+            Log.d(TAG, "公钥导出失败" + result[0]);
+        }
+        return null;
+    }
+
+    /**
+     * RSA公钥加密 如果使用1024模长，那么输入的最大字节数是117字节，输出的字节数是128字节
+     *
+     * 发送的数据块 40：唯一数据块 41：首块 42：中间块 43：尾块
+     *
+     * @param encType 加密类型 00:1024  01:1280
+     * @param pubkeyFileId 公钥文件的ID
+     * @param bytes 加密的数据
+     */
+    public static byte[] rsaPublicKeyEnc(SafetyCardMT2 mSafetyCardMT2, String encType,
+            String pubkeyFileId, byte[] bytes) {
+        Log.i(TAG, "加密的字节数====" + bytes.length);
+        String inData = Util.getHexString(bytes);
+        if (bytes.length <= 117) {
+            String[] result = mSafetyCardMT2.RSAPublicKeyEnc("40", encType, pubkeyFileId, inData);
+            if (SafetyCardMT2.RES_OK.equals(result[0])) {
+                //加密数据成功
+                Log.d(TAG, "加密数据成功===" + result[1]);
+                return Util.hexStringToBytes(result[1]);
+            } else {
+                Log.d(TAG, "加密数据失败===" + result[0]);
+            }
+            return null;
+        }
+        if (bytes.length <= 234) {
+            //分成首块和尾块发送
+            String headData = inData.substring(0,  234);
+            String endData = inData.substring(234, inData.length());
+            String[] headResult =
+                    mSafetyCardMT2.RSAPublicKeyEnc("41", encType, pubkeyFileId, headData);
+            if (SafetyCardMT2.RES_OK.equals(headResult[0])) {
+                //首块发送成功 继续发送尾块
+                String[] endResult =  mSafetyCardMT2.RSAPublicKeyEnc("43", encType, pubkeyFileId, endData);
+                if (SafetyCardMT2.RES_OK.equals(endResult[0])) {
+                    //加密数据成功
+                    Log.d(TAG, "加密数据成功===" + endResult[1]);
+                    return Util.hexStringToBytes(endResult[1]);
+                } else {
+                    Log.d(TAG, "加密数据失败===" + endResult[0]);
+                }
+            } else {
+                Log.d(TAG, "首块数据发送失败===" + headResult[0]);
+            }
+            return null;
+        }
+        if (bytes.length <= 351) {
+            //分成首块、中间块和尾块发送
+            String headData = inData.substring(0, inData.length() / 3);
+            String midData = inData.substring(inData.length() / 3,
+                    inData.length() - inData.length() / 3 - 1);
+            String endData =
+                    inData.substring(inData.length() - inData.length() / 3 - 1, inData.length());
+
+            String[] headResult = mSafetyCardMT2.RSAPublicKeyEnc("41", encType, pubkeyFileId, headData);
+            if (SafetyCardMT2.RES_OK.equals(headResult[0])) {
+                //首块发送成功 继续发送中间块
+                String[] midResult = mSafetyCardMT2.RSAPublicKeyEnc("42", encType, pubkeyFileId, midData);
+                if (SafetyCardMT2.RES_OK.equals(midResult[0])) {
+                    //中间块发送成功 继续发送尾块
+                    String[] endResult = mSafetyCardMT2.RSAPublicKeyEnc("43", encType, pubkeyFileId, endData);
+                    if (SafetyCardMT2.RES_OK.equals(endResult[0])) {
+                        //加密数据成功
+                        Log.d(TAG, "加密数据成功===" + endResult[1]);
+                        return Util.hexStringToBytes(endResult[1]);
+                    } else {
+                        Log.d(TAG, "加密数据失败===" + endResult[0]);
+                    }
+                } else {
+                    Log.d(TAG, "中间块数据发送失败===" + midResult[0]);
+                }
+            } else {
+                Log.d(TAG, "首块数据发送失败===" + headResult[0]);
+            }
+            return null;
+        }
+        //分成首块、中间块和尾块发送
+        String headData = inData.substring(0, 234);
+        //发送首块数据
+        String[] headResult = mSafetyCardMT2.RSAPublicKeyEnc("41", encType, pubkeyFileId, headData);
+        if (SafetyCardMT2.RES_OK.equals(headResult[0])) {
+            //首块数据发送成功
+            String midData = inData.substring(234, inData.length() - 234);
+            while (midData.length() > 234) {
+                //拆分中间块数据
+                String[] midResult =
+                        mSafetyCardMT2.RSAPublicKeyEnc("42", encType, pubkeyFileId, midData);
+                if (SafetyCardMT2.RES_OK.equals(midResult[0])) {
+                    midData = midData.substring(234, midData.length());
+                }
+            }
+            //发送最后一块中间数据
+            String[] midResult =
+                    mSafetyCardMT2.RSAPublicKeyEnc("42", encType, pubkeyFileId, midData);
+            if (SafetyCardMT2.RES_OK.equals(midResult[0])) {
+                String endData = inData.substring(inData.length() - 234, inData.length());
+                String[] endResult = mSafetyCardMT2.RSAPublicKeyEnc("43", encType, pubkeyFileId, endData);
+                if (SafetyCardMT2.RES_OK.equals(endResult[0])) {
+                    //加密数据成功
+                    Log.d(TAG, "加密数据成功===" + endResult[1]);
+                    return Util.hexStringToBytes(endResult[1]);
+                } else {
+                    Log.d(TAG, "加密数据失败===" + endResult[0]);
+                }
+            } else {
+                Log.d(TAG, "中间块数据发送失败===" + midResult[0]);
+            }
+        } else {
+            Log.d(TAG, "首块数据发送失败===" + headResult[0]);
+        }
+        return null;
+    }
+
+    /**
+     * RSA私钥解密
+     *
+     * 发送的数据块 40：唯一数据块 41：首块 42：中间块 43：尾块
+     *
+     * @param encType 解密类型 00:1024  01:1280
+     * @param prikeyFileId 私钥文件的ID
+     * @param bytes 解密的数据
+     */
+    public static byte[] rsaPrivateKeyDec(SafetyCardMT2 mSafetyCardMT2, String encType,
+            String prikeyFileId, byte[] bytes) {
+        Log.i(TAG, "解密的字节数====" + bytes.length);
+        String inData = Util.getHexString(bytes);
+        if (bytes.length <= 128) {
+            String[] result = mSafetyCardMT2.RSAPrivateKeyDec("40", encType, prikeyFileId, inData);
+            if (SafetyCardMT2.RES_OK.equals(result[0])) {
+                //解密数据成功
+                Log.d(TAG, "解密数据成功===" + result[1]);
+                return Util.hexStringToBytes(result[1]);
+            } else {
+                Log.d(TAG, "解密数据失败===" + result[0]);
+            }
+            return null;
+        }
+        if (bytes.length <=256) {
+            //分成首块和尾块发送
+            String headData = inData.substring(0, inData.length() / 2);
+            String endData = inData.substring(inData.length() / 2, inData.length());
+            String[] headResult =
+                    mSafetyCardMT2.RSAPrivateKeyDec("41", encType, prikeyFileId, headData);
+            if (SafetyCardMT2.RES_OK.equals(headResult[0])) {
+                //首块发送成功 继续发送尾块
+                String[] endResult =  mSafetyCardMT2.RSAPrivateKeyDec("43", encType, prikeyFileId, endData);
+                if (SafetyCardMT2.RES_OK.equals(endResult[0])) {
+                    //解密数据成功
+                    Log.d(TAG, "解密数据成功===" + endResult[1]);
+                    return Util.hexStringToBytes(endResult[1]);
+                } else {
+                    Log.d(TAG, "解密数据失败===" + endResult[0]);
+                }
+            } else {
+                Log.d(TAG, "首块数据发送失败===" + headResult[0]);
+            }
+            return null;
+        }
+        if (bytes.length <= 384) {
+            //分成首块、中间块和尾块发送
+            String headData = inData.substring(0, inData.length() / 3);
+            String midData = inData.substring(inData.length() / 3,
+                    inData.length() - inData.length() / 3 - 1);
+            String endData =
+                    inData.substring(inData.length() - inData.length() / 3 - 1, inData.length());
+
+            String[] headResult = mSafetyCardMT2.RSAPrivateKeyDec("41", encType, prikeyFileId, headData);
+            if (SafetyCardMT2.RES_OK.equals(headResult[0])) {
+                //首块发送成功 继续发送中间块
+                String[] midResult = mSafetyCardMT2.RSAPrivateKeyDec("42", encType, prikeyFileId, midData);
+                if (SafetyCardMT2.RES_OK.equals(midResult[0])) {
+                    //中间块发送成功 继续发送尾块
+                    String[] endResult = mSafetyCardMT2.RSAPrivateKeyDec("43", encType, prikeyFileId, endData);
+                    if (SafetyCardMT2.RES_OK.equals(endResult[0])) {
+                        //解密数据成功
+                        Log.d(TAG, "解密数据成功===" + endResult[1]);
+                        return Util.hexStringToBytes(endResult[1]);
+                    } else {
+                        Log.d(TAG, "解密数据失败===" + endResult[0]);
+                    }
+                } else {
+                    Log.d(TAG, "中间块数据发送失败===" + midResult[0]);
+                }
+            } else {
+                Log.d(TAG, "首块数据发送失败===" + headResult[0]);
+            }
+            return null;
+        }
+        //分成首块、中间块和尾块发送
+        String headData = inData.substring(0, 256);
+        //发送首块数据
+        String[] headResult = mSafetyCardMT2.RSAPrivateKeyDec("41", encType, prikeyFileId, headData);
+        if (SafetyCardMT2.RES_OK.equals(headResult[0])) {
+            //首块数据发送成功
+            String midData = inData.substring(256, inData.length() - 256);
+            while (midData.length() > 256) {
+                //拆分中间块数据
+                String[] midResult =
+                        mSafetyCardMT2.RSAPrivateKeyDec("42", encType, prikeyFileId, midData);
+                if (SafetyCardMT2.RES_OK.equals(midResult[0])) {
+                    midData = midData.substring(256, midData.length());
+                }
+            }
+            //发送最后一块中间数据
+            String[] midResult =
+                    mSafetyCardMT2.RSAPrivateKeyDec("42", encType, prikeyFileId, midData);
+            if (SafetyCardMT2.RES_OK.equals(midResult[0])) {
+                String endData = inData.substring(inData.length() - 256, inData.length());
+                String[] endResult = mSafetyCardMT2.RSAPrivateKeyDec("43", encType, prikeyFileId, endData);
+                if (SafetyCardMT2.RES_OK.equals(endResult[0])) {
+                    //解密数据成功
+                    Log.d(TAG, "解密数据成功===" + endResult[1]);
+                    return Util.hexStringToBytes(endResult[1]);
+                } else {
+                    Log.d(TAG, "解密数据失败===" + endResult[0]);
+                }
+            } else {
+                Log.d(TAG, "中间块数据发送失败===" + midResult[0]);
+            }
+        } else {
+            Log.d(TAG, "首块数据发送失败===" + headResult[0]);
+        }
+        return null;
+    }
+
 }

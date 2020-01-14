@@ -56,6 +56,11 @@ public class TestAty extends AppCompatActivity {
     @BindView(R.id.btn_SM4_Dec) Button btnSM4Dec;
     @BindView(R.id.btn_PIN_authenticate) Button btnPINAuthenticate;
     @BindView(R.id.btn_PIN_change) Button btnPINChange;
+    @BindView(R.id.btn_RSA_pubKeyFile) Button btnRSAPubKeyFile;
+    @BindView(R.id.btn_RSA_priKeyFile) Button btnRSAPriKeyFile;
+    @BindView(R.id.btn_RSA_PeiDui) Button btnRSAPeiDui;
+    @BindView(R.id.btn_RSA_Enc) Button btnRSAEnc;
+    @BindView(R.id.btn_RSA_Dec) Button btnRSADec;
     private SafetyCardMT2 mSafetyCardMT2;
     private String TAG = "MT2Util";
     //导出的公钥值
@@ -104,7 +109,8 @@ public class TestAty extends AppCompatActivity {
             R.id.btn_SM4_importSM4Key, R.id.btn_importSessionKey_MingWen,
             R.id.btn_importSessionKey_MiWen, R.id.btn_exportSessionKey_MingWen,
             R.id.btn_exportSessionKey_MiWen, R.id.btn_mt2_size, R.id.btn_SM4_Enc, R.id.btn_SM4_Dec,
-            R.id.btn_PIN_authenticate, R.id.btn_PIN_change
+            R.id.btn_PIN_authenticate, R.id.btn_PIN_change, R.id.btn_RSA_pubKeyFile,
+            R.id.btn_RSA_priKeyFile, R.id.btn_RSA_PeiDui, R.id.btn_RSA_Enc, R.id.btn_RSA_Dec
     })
     public void onClick(View view) {
         switch (view.getId()) {
@@ -140,7 +146,7 @@ public class TestAty extends AppCompatActivity {
                 new Thread(new Runnable() {
                     @Override
                     public void run() {
-                         getCardSize("03", "04");
+                        getCardSize("03", "04");
                     }
                 }).start();
                 break;
@@ -362,6 +368,31 @@ public class TestAty extends AppCompatActivity {
                 break;
             case R.id.btn_PIN_change:
                 changePIN("313233343536", "313233343537");
+                break;
+
+            case R.id.btn_RSA_pubKeyFile:
+                //创建RSA公钥文件
+                MT2Util.createRSAPubKeyFile(mSafetyCardMT2, "0301", "0400");
+                break;
+            case R.id.btn_RSA_priKeyFile:
+                //创建RSA私钥文件
+                MT2Util.createRSAPriKeyFile(mSafetyCardMT2, "0302", "0400");
+                break;
+            case R.id.btn_RSA_PeiDui:
+                //RSA公私钥文件配对
+                String rsaPublicKey = MT2Util.pairRSA(mSafetyCardMT2, "00", "01", "0301", "0302");
+                break;
+            case R.id.btn_RSA_Enc:
+                //RSA公钥加密
+                //String s =
+                //        "你好,hello word!,数据库里东方时空的方式开发胜多负少个开始的覅所数据库里东方时空的方式开发胜多负少个开始的覅所以符合肯定是开发绝对是副科级好丹非数据库里东方时空的方式开发胜多负少个开始的覅所以符合肯定是开发绝对是副科级好丹非素红薯粉丝就好地方惊世毒妃和快递费就好地方房贷峰素红薯粉丝就好地方惊世毒妃和快递费就好地方房贷峰以符合肯定是开发绝对是副科级好丹非素红薯粉丝就好地方惊世毒妃和快递费就好地方房贷峰数据库里东方时空的方式开发胜多负少个开始的覅所以符合肯定是开发绝对是副科级好丹非素红薯粉丝就好地方惊世毒妃和快递费就好地方房贷峰数据库里东方时空的方式开发胜多负少个开始的覅所以符合肯定是开发绝对是副科级好丹非素红薯粉丝就好地方惊世毒妃和快递费就好地方房贷峰";
+                String s="你好,hello word!,数据库里东方时空的方式开发胜多负少个开始的覅所数据库里东方时空的方式开发胜多负少个开始的覅所以符合肯定是开发绝对是副科";
+                sb = MT2Util.rsaPublicKeyEnc(mSafetyCardMT2, "00", "0301", s.getBytes());
+                break;
+            case R.id.btn_RSA_Dec:
+                //RSA私钥解密
+                byte[] b1 = MT2Util.rsaPrivateKeyDec(mSafetyCardMT2, "00", "0302", sb);
+                Log.i(TAG, new String(b1));
                 break;
         }
     }
